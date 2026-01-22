@@ -30,11 +30,11 @@ export default function VideoSection() {
           className="text-center mb-12"
         >
           <span className="text-gold-500 font-accent uppercase tracking-[0.2em] text-sm">
-            Watch Us Play
+            2026 Season
           </span>
           <h2 className="text-stadium text-4xl md:text-6xl mt-4">
-            <span className="text-white">SEE US IN</span>{' '}
-            <span className="text-gradient-gold">ACTION</span>
+            <span className="text-white">JOIN THE</span>{' '}
+            <span className="text-gradient-gold">TEAM</span>
           </h2>
         </motion.div>
 
@@ -51,6 +51,9 @@ export default function VideoSection() {
             className="w-full h-full object-cover"
             poster="/assets/logo-transparent.png"
             playsInline
+            controls
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
             onEnded={() => setIsPlaying(false)}
           >
             <source src="/assets/promo-video.mp4" type="video/mp4" />
@@ -100,7 +103,7 @@ export default function VideoSection() {
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mt-6 text-white/50 text-sm"
         >
-          Louisville Lightning 2026 Season Promo
+          Louisville Lightning 7U — 2026 Tryouts
         </motion.p>
       </div>
     </section>
