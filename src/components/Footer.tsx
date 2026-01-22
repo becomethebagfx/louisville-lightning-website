@@ -36,7 +36,7 @@ export default function Footer() {
             viewport={{ once: true }}
             className="flex items-center gap-8"
           >
-            {['About', 'Video', 'Tryouts', 'Contact'].map((item) => (
+            {['About', 'Video', 'Tryouts', 'Schedule', 'Contact'].map((item) => (
               <a
                 key={item}
                 href={`#${item.toLowerCase()}`}

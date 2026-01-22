@@ -19,8 +19,8 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
-    title: 'USSSA & Kentucky Select',
-    description: 'Registered with USSSA and Kentucky Select leagues for maximum competitive opportunities.',
+    title: 'All Local Play',
+    description: 'All tournaments and league games within an hour of Louisville. Wednesday night league from April through May.',
   },
   {
     icon: (
@@ -67,7 +67,7 @@ export default function About() {
             <span className="text-gradient-gold">CHAMPIONS</span>
           </h2>
           <p className="mt-6 text-white/60 max-w-2xl mx-auto text-lg">
-            Louisville Lightning provides a competitive yet supportive environment for young athletes to develop their skills and love for the game.
+            Growth, discipline, and learning the game the right way. Our number one goal is to have fun — this is a game after all!
           </p>
         </motion.div>
 

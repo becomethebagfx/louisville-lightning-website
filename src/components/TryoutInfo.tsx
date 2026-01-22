@@ -58,7 +58,7 @@ export default function TryoutInfo() {
         >
           <div className="inline-block border-4 border-gold-500 p-8 md:p-12 box-glow-gold">
             <div className="text-stadium text-6xl md:text-8xl lg:text-9xl text-gold-500 glow-gold leading-none">
-              JAN 30
+              JAN 31
             </div>
             <div className="text-stadium text-2xl md:text-3xl text-white mt-2">
               2026
