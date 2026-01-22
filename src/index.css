@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ============================
+   LOUISVILLE LIGHTNING
+   Electric Power Design System
+   ============================ */
+
+@theme {
+  /* Navy depths */
+  --color-navy-900: #0A0F1C;
+  --color-navy-800: #0F1A2E;
+  --color-navy-700: #1B2A4E;
+  --color-navy-600: #253A66;
+
+  /* Electric gold spectrum */
+  --color-gold-500: #F5B800;
+  --color-gold-400: #FFD23F;
+  --color-gold-300: #FFE066;
+  --color-gold-glow: rgba(245, 184, 0, 0.6);
+
+  /* Typography */
+  --font-display: 'Bebas Neue', 'Impact', system-ui;
+  --font-body: 'Barlow', system-ui, sans-serif;
+  --font-accent: 'Barlow Condensed', system-ui, sans-serif;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--color-navy-900);
+  color: white;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-navy-900);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gold-500);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold-400);
+}
+
+/* Selection styling */
+::selection {
+  background: var(--color-gold-500);
+  color: var(--color-navy-900);
+}
+
+/* Stadium text effect */
+.text-stadium {
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Electric glow effect */
+.glow-gold {
+  text-shadow:
+    0 0 10px var(--color-gold-glow),
+    0 0 20px var(--color-gold-glow),
+    0 0 40px var(--color-gold-glow);
+}
+
+.glow-gold-subtle {
+  text-shadow:
+    0 0 8px var(--color-gold-glow),
+    0 0 16px rgba(245, 184, 0, 0.3);
+}
+
+/* Box glow */
+.box-glow-gold {
+  box-shadow:
+    0 0 20px var(--color-gold-glow),
+    0 0 40px rgba(245, 184, 0, 0.3),
+    inset 0 0 20px rgba(245, 184, 0, 0.1);
+}
+
+/* Gradient text */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--color-gold-300), var(--color-gold-500), var(--color-gold-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Noise texture overlay */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Diagonal stripe pattern */
+.stripe-pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(245, 184, 0, 0.03) 10px,
+    rgba(245, 184, 0, 0.03) 20px
+  );
+}
+
+/* Electric border */
+.border-electric {
+  position: relative;
+}
+
+.border-electric::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--color-gold-500);
+  clip-path: polygon(
+    0 0, 100% 0, 100% calc(100% - 10px),
+    calc(100% - 10px) 100%, 0 100%
+  );
+}
+
+/* Button base */
+.btn-lightning {
+  font-family: var(--font-accent);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1rem 2.5rem;
+  background: var(--color-gold-500);
+  color: var(--color-navy-900);
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-lightning:hover {
+  background: var(--color-gold-400);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(245, 184, 0, 0.4);
+}
+
+.btn-lightning::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-lightning:hover::before {
+  left: 100%;
+}
+
+/* Card styling */
+.card-electric {
+  background: linear-gradient(135deg, var(--color-navy-800), var(--color-navy-700));
+  border: 1px solid rgba(245, 184, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-electric::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--color-gold-500), transparent);
+}
+
+/* Section divider */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold-500), transparent);
+  opacity: 0.3;
+}
+
+/* Video play button */
+.play-btn {
+  width: 80px;
+  height: 80px;
+  background: var(--color-gold-500);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 30px var(--color-gold-glow);
+  border: none;
+}
+
+.play-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 50px var(--color-gold-glow);
+}
+
+.play-btn svg {
+  width: 30px;
+  height: 30px;
+  fill: var(--color-navy-900);
+  margin-left: 4px;
+}
