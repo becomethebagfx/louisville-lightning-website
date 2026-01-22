@@ -100,7 +100,7 @@ export default function VideoSection() {
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mt-6 text-white/50 text-sm"
         >
-          Louisville Lightning 2025 Season Promo
+          Louisville Lightning 2026 Season Promo
         </motion.p>
       </div>
     </section>

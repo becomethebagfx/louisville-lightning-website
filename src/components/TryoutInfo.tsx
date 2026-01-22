@@ -61,7 +61,7 @@ export default function TryoutInfo() {
               JAN 30
             </div>
             <div className="text-stadium text-2xl md:text-3xl text-white mt-2">
-              2025
+              2026
             </div>
           </div>
         </motion.div>

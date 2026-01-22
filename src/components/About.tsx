@@ -113,7 +113,7 @@ export default function About() {
           {[
             { value: '7U', label: 'Age Group' },
             { value: '5+', label: 'Tournaments' },
-            { value: '2025', label: 'Season' },
+            { value: '2026', label: 'Season' },
           ].map((stat) => (
             <div key={stat.label}>
               <div className="text-stadium text-4xl md:text-5xl text-gold-500 glow-gold-subtle">

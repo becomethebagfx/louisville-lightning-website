@@ -50,21 +50,6 @@ export default function Contact() {
           </a>
         </motion.div>
 
-        {/* Email Display */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={isInView ? { y: 0, opacity: 1 } : {}}
-          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6"
-        >
-          <a
-            href="mailto:brandonhayman.b@gmail.com"
-            className="text-gold-500 hover:text-gold-400 transition-colors font-accent tracking-wide"
-          >
-            brandonhayman.b@gmail.com
-          </a>
-        </motion.div>
-
         {/* Decorative lightning bolts */}
         <motion.div
           initial={{ opacity: 0 }}
