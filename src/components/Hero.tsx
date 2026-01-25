@@ -45,6 +45,9 @@ export default function Hero() {
           <span className="inline-block px-6 py-2 border-2 border-gold-500 text-gold-500 text-xl md:text-2xl tracking-[0.3em] font-accent uppercase">
             7U Travel Baseball
           </span>
+          <p className="mt-2 text-sm text-gold-400/80">
+            Players must be born on or after May 1, 2018
+          </p>
         </motion.div>
 
         {/* Tagline */}

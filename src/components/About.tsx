@@ -111,7 +111,7 @@ export default function About() {
           className="mt-16 grid grid-cols-3 gap-8 text-center"
         >
           {[
-            { value: '7U', label: 'Age Group' },
+            { value: '7U', label: 'Age Group (Born 5/1/2018+)' },
             { value: '5+', label: 'Tournaments' },
             { value: '2026', label: 'Season' },
           ].map((stat) => (
