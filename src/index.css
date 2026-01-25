@@ -175,6 +175,29 @@ body {
   left: 100%;
 }
 
+.btn-lightning-outline {
+  font-family: var(--font-accent);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1rem 2.5rem;
+  background: transparent;
+  color: var(--color-gold-500);
+  border: 2px solid var(--color-gold-500);
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-lightning-outline:hover {
+  background: var(--color-gold-500);
+  color: var(--color-navy-900);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(245, 184, 0, 0.4);
+}
+
 /* Card styling */
 .card-electric {
   background: linear-gradient(135deg, var(--color-navy-800), var(--color-navy-700));

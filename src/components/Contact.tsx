@@ -29,26 +29,48 @@ export default function Contact() {
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mt-8 text-white/60 text-lg md:text-xl max-w-xl mx-auto"
         >
-          Get in touch with us to learn more about tryouts, tournaments, and joining the Louisville Lightning family.
+          Get in touch with Coach Taylor Davis to learn more about tryouts, tournaments, and joining the Louisville Lightning family.
         </motion.p>
 
-        {/* Email Button */}
+        {/* Contact Buttons */}
         <motion.div
           initial={{ y: 30, opacity: 0 }}
           animate={isInView ? { y: 0, opacity: 1 } : {}}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-10"
+          className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
+          {/* Text Button */}
           <a
-            href="mailto:brandonhayman.b@gmail.com?subject=Louisville Lightning 7U - Inquiry"
+            href="sms:5022991804?body=Hi Coach Davis, I'm interested in Louisville Lightning 7U!"
             className="btn-lightning text-lg inline-flex items-center gap-3"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            Contact Us
+            Text Coach Davis
+          </a>
+          
+          {/* Call Button */}
+          <a
+            href="tel:5022991804"
+            className="btn-lightning-outline text-lg inline-flex items-center gap-3"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            Call Coach Davis
           </a>
         </motion.div>
+
+        {/* Coach Info */}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-6 text-white/40 text-sm"
+        >
+          Coach Taylor Davis • (502) 299-1804
+        </motion.p>
 
         {/* Decorative lightning bolts */}
         <motion.div
