@@ -9,9 +9,10 @@ interface Props {
   onStop: () => void;
   onEdit: () => void;
   audioVersion: number;
+  onDragStart?: (e: React.PointerEvent) => void;
 }
 
-export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, audioVersion }: Props) {
+export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, audioVersion, onDragStart }: Props) {
   const [hasAudio, setHasAudio] = useState(false);
 
   useEffect(() => {
@@ -27,8 +28,11 @@ export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, 
       }`}
     >
       <div className="p-4 flex items-center gap-3">
-        {/* Drag handle */}
-        <div className="flex-shrink-0 cursor-grab active:cursor-grabbing touch-none text-white/20 hover:text-white/40 transition-colors">
+        {/* Drag handle — only this triggers reorder */}
+        <div
+          onPointerDown={onDragStart}
+          className="flex-shrink-0 w-10 h-10 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none text-white/25 hover:text-white/50 transition-colors"
+        >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="9" cy="6" r="1.5" />
             <circle cx="15" cy="6" r="1.5" />

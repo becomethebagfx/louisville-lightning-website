@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, Reorder } from 'framer-motion';
+import { motion, Reorder, useDragControls } from 'framer-motion';
 import type { Player } from '../lib/types';
 import { useRoster } from '../lib/useRoster';
 import { useAudioPlayer } from '../lib/useAudioPlayer';
@@ -7,6 +7,43 @@ import { deleteAudio } from '../lib/db';
 import SpeakerSetup from '../components/walkup/SpeakerSetup';
 import PlayerCard from '../components/walkup/PlayerCard';
 import EditPlayerModal from '../components/walkup/EditPlayerModal';
+
+function ReorderablePlayer({
+  player,
+  isPlaying,
+  onPlay,
+  onStop,
+  onEdit,
+  audioVersion,
+}: {
+  player: Player;
+  isPlaying: boolean;
+  onPlay: () => void;
+  onStop: () => void;
+  onEdit: () => void;
+  audioVersion: number;
+}) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={player}
+      className="list-none"
+      dragListener={false}
+      dragControls={controls}
+      whileDrag={{ scale: 1.03, boxShadow: '0 8px 32px rgba(245,184,0,0.3)', zIndex: 50 }}
+    >
+      <PlayerCard
+        player={player}
+        isPlaying={isPlaying}
+        onPlay={onPlay}
+        onStop={onStop}
+        onEdit={onEdit}
+        audioVersion={audioVersion}
+        onDragStart={(e) => controls.start(e)}
+      />
+    </Reorder.Item>
+  );
+}
 
 export default function WalkUpPage() {
   const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers } = useRoster();
@@ -117,21 +154,15 @@ export default function WalkUpPage() {
             className="space-y-3"
           >
             {players.map((player) => (
-              <Reorder.Item
+              <ReorderablePlayer
                 key={player.id}
-                value={player}
-                className="list-none"
-                whileDrag={{ scale: 1.03, boxShadow: '0 8px 32px rgba(245,184,0,0.3)', zIndex: 50 }}
-              >
-                <PlayerCard
-                  player={player}
-                  isPlaying={playingId === player.id}
-                  onPlay={() => play(player.id, player.startTime, player.clipDuration)}
-                  onStop={stop}
-                  onEdit={() => setEditingPlayer(player)}
-                  audioVersion={audioVersion}
-                />
-              </Reorder.Item>
+                player={player}
+                isPlaying={playingId === player.id}
+                onPlay={() => play(player.id, player.startTime, player.clipDuration)}
+                onStop={stop}
+                onEdit={() => setEditingPlayer(player)}
+                audioVersion={audioVersion}
+              />
             ))}
           </Reorder.Group>
         )}
