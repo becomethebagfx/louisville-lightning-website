@@ -51,15 +51,15 @@ create policy "Anyone can delete audio"
 
 -- Seed the roster with Louisville Lightning players
 insert into players (id, name, number, song_name, sort_order) values
-  ('player-kask-k', 'Kask K', '?', '', 0),
-  ('player-kash-d', 'Kash D', '?', '', 1),
-  ('player-reid', 'Reid', '?', '', 2),
-  ('player-elijah', 'Elijah', '25', '', 3),
-  ('player-micah', 'Micah', '?', '', 4),
-  ('player-colt', 'Colt', '?', '', 5),
-  ('player-beau', 'Beau', '?', '', 6),
-  ('player-mason', 'Mason', '?', '', 7),
-  ('player-grayson', 'Grayson', '?', '', 8),
-  ('player-cooper', 'Cooper', '?', '', 9),
-  ('player-grant', 'Grant', '?', '', 10)
+  ('player-micah', 'Micah Davis', '0', '', 0),
+  ('player-mason', 'Mason Schechter', '1', '', 1),
+  ('player-grayson', 'Grayson Abramson', '4', '', 2),
+  ('player-cooper', 'Cooper Lindig', '6', '', 3),
+  ('player-beau', 'Beau Kerins', '8', '', 4),
+  ('player-colt', 'Colt Quesenberry', '9', '', 5),
+  ('player-grant', 'Grant Churchman', '10', '', 6),
+  ('player-kash-k', 'Kash Kittel', '23', '', 7),
+  ('player-elijah', 'Elijah Hayman', '25', '', 8),
+  ('player-kash-d', 'Kash Deacon', '29', '', 9),
+  ('player-reid', 'Reid Morrison', '43', '', 10)
 on conflict (id) do nothing;

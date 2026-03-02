@@ -89,25 +89,6 @@ export default function Schedule() {
               </p>
             </div>
 
-            {/* Practice */}
-            <div>
-              <h3 className="text-xl font-bold text-gold-500 font-accent uppercase tracking-wide mb-4 flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Practice Schedule
-              </h3>
-              <div className="space-y-4 text-white/80 text-center">
-                <div>
-                  <p className="font-semibold text-white">Indoor (Jan 31 - Mar 21)</p>
-                  <p className="text-white/60">Saturdays 2:00-3:30 PM</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-white">Outdoor (Mar - Jun)</p>
-                  <p className="text-white/60">Tuesday Evenings 6:00-7:30 PM</p>
-                </div>
-              </div>
-            </div>
           </motion.div>
 
           {/* Right Column - Team Info */}
@@ -152,24 +133,6 @@ export default function Schedule() {
               </p>
             </div>
 
-            {/* Cost */}
-            <div className="card-electric p-6 rounded-lg text-center">
-              <h3 className="text-xl font-bold text-gold-500 font-accent uppercase tracking-wide mb-4 flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Season Cost
-              </h3>
-              <p className="text-3xl font-bold text-white">
-                $600 <span className="text-white/50 text-lg font-normal">per player</span>
-              </p>
-              <p className="text-white/60 mt-2 text-sm">
-                Half due at signup, remaining half due by March 1st
-              </p>
-              <p className="text-white/50 mt-3 text-xs">
-                Includes: practice time, tournament fees, insurance, equipment (catcher's gear, baseballs), two jerseys, and two hats
-              </p>
-            </div>
           </motion.div>
         </div>
       </div>

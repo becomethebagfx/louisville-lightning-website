@@ -5,17 +5,17 @@ import { supabase } from './supabase'
 const STORAGE_KEY = 'lightning-roster'
 
 const DEFAULT_ROSTER: Player[] = [
-  { id: 'player-kask-k', name: 'Kask K', number: '?', songName: '' },
-  { id: 'player-kash-d', name: 'Kash D', number: '?', songName: '' },
-  { id: 'player-reid', name: 'Reid', number: '?', songName: '' },
-  { id: 'player-elijah', name: 'Elijah', number: '25', songName: '' },
-  { id: 'player-micah', name: 'Micah', number: '?', songName: '' },
-  { id: 'player-colt', name: 'Colt', number: '?', songName: '' },
-  { id: 'player-beau', name: 'Beau', number: '?', songName: '' },
-  { id: 'player-mason', name: 'Mason', number: '?', songName: '' },
-  { id: 'player-grayson', name: 'Grayson', number: '?', songName: '' },
-  { id: 'player-cooper', name: 'Cooper', number: '?', songName: '' },
-  { id: 'player-grant', name: 'Grant', number: '?', songName: '' },
+  { id: 'player-micah', name: 'Micah Davis', number: '0', songName: '' },
+  { id: 'player-mason', name: 'Mason Schechter', number: '1', songName: '' },
+  { id: 'player-grayson', name: 'Grayson Abramson', number: '4', songName: '' },
+  { id: 'player-cooper', name: 'Cooper Lindig', number: '6', songName: '' },
+  { id: 'player-beau', name: 'Beau Kerins', number: '8', songName: '' },
+  { id: 'player-colt', name: 'Colt Quesenberry', number: '9', songName: '' },
+  { id: 'player-grant', name: 'Grant Churchman', number: '10', songName: '' },
+  { id: 'player-kash-k', name: 'Kash Kittel', number: '23', songName: '' },
+  { id: 'player-elijah', name: 'Elijah Hayman', number: '25', songName: '' },
+  { id: 'player-kash-d', name: 'Kash Deacon', number: '29', songName: '' },
+  { id: 'player-reid', name: 'Reid Morrison', number: '43', songName: '' },
 ]
 
 function loadLocal(): Player[] {
