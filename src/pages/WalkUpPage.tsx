@@ -12,6 +12,7 @@ export default function WalkUpPage() {
   const { players, addPlayer, updatePlayer, removePlayer } = useRoster();
   const { playingId, play, stop } = useAudioPlayer();
   const [editingPlayer, setEditingPlayer] = useState<Player | null | 'new'>(null);
+  const [audioVersion, setAudioVersion] = useState(0);
 
   function handleDelete(id: string) {
     if (playingId === id) stop();
@@ -119,6 +120,7 @@ export default function WalkUpPage() {
                 onPlay={() => play(player.id)}
                 onStop={stop}
                 onEdit={() => setEditingPlayer(player)}
+                audioVersion={audioVersion}
               />
             ))}
           </div>
@@ -152,6 +154,7 @@ export default function WalkUpPage() {
           onSave={p => {
             if (editingPlayer === 'new') addPlayer(p);
             else updatePlayer(p);
+            setAudioVersion(v => v + 1);
           }}
           onDelete={editingPlayer !== 'new' ? () => handleDelete(editingPlayer.id) : undefined}
           onClose={() => setEditingPlayer(null)}

@@ -36,6 +36,8 @@ body {
   background: var(--color-navy-900);
   color: white;
   overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
 }
 
 /* Custom scrollbar */
@@ -160,6 +162,11 @@ body {
   box-shadow: 0 10px 30px rgba(245, 184, 0, 0.4);
 }
 
+.btn-lightning:active {
+  transform: scale(0.95);
+  box-shadow: 0 4px 15px rgba(245, 184, 0, 0.3);
+}
+
 .btn-lightning::before {
   content: '';
   position: absolute;
@@ -196,6 +203,11 @@ body {
   color: var(--color-navy-900);
   transform: translateY(-2px);
   box-shadow: 0 10px 30px rgba(245, 184, 0, 0.4);
+}
+
+.btn-lightning-outline:active {
+  transform: scale(0.95);
+  box-shadow: 0 4px 15px rgba(245, 184, 0, 0.3);
 }
 
 /* Card styling */
