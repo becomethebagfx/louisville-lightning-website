@@ -17,8 +17,12 @@ export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop,
   const [hasAudio, setHasAudio] = useState(false);
 
   useEffect(() => {
+    if (!player.songName) {
+      setHasAudio(false);
+      return;
+    }
     getAudio(player.id).then(blob => setHasAudio(!!blob));
-  }, [player.id, audioVersion]);
+  }, [player.id, player.songName, audioVersion]);
 
   return (
     <div
