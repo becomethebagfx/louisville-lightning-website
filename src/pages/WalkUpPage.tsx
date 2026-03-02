@@ -117,7 +117,7 @@ export default function WalkUpPage() {
                 player={player}
                 index={index}
                 isPlaying={playingId === player.id}
-                onPlay={() => play(player.id)}
+                onPlay={() => play(player.id, player.startTime, player.clipDuration)}
                 onStop={stop}
                 onEdit={() => setEditingPlayer(player)}
                 audioVersion={audioVersion}

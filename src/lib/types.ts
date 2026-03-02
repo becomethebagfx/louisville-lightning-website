@@ -3,4 +3,6 @@ export interface Player {
   name: string
   number: string
   songName: string
+  startTime?: number
+  clipDuration?: number
 }

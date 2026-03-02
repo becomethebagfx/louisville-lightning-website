@@ -6,7 +6,6 @@ export default function SpeakerSetup() {
   const [expanded, setExpanded] = useState(false);
 
   function playTestSound() {
-    // Create a short beep using Web Audio API
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -17,6 +16,7 @@ export default function SpeakerSetup() {
     osc.start();
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
     osc.stop(ctx.currentTime + 0.5);
+    setTimeout(() => ctx.close(), 600);
     setTested(true);
   }
 

@@ -7,7 +7,7 @@ const DEFAULT_ROSTER: Player[] = [
   { id: 'player-kask-k', name: 'Kask K', number: '', songName: '' },
   { id: 'player-kash-d', name: 'Kash D', number: '', songName: '' },
   { id: 'player-reid', name: 'Reid', number: '', songName: '' },
-  { id: 'player-elijah', name: 'Elijah', number: '', songName: '' },
+  { id: 'player-elijah', name: 'Elijah', number: '25', songName: '' },
   { id: 'player-micah', name: 'Micah', number: '', songName: '' },
   { id: 'player-colt', name: 'Colt', number: '', songName: '' },
   { id: 'player-beau', name: 'Beau', number: '', songName: '' },
