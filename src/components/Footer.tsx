@@ -40,7 +40,11 @@ export default function Footer() {
             {['About', 'Schedule', 'Contact'].map((item) => (
               <a
                 key={item}
-                href={`/#${item.toLowerCase()}`}
+                href={`#${item.toLowerCase()}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById(item.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="text-white/50 hover:text-gold-500 transition-colors font-accent uppercase tracking-wider text-sm"
               >
                 {item}

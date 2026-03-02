@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 export default function Hero() {
@@ -57,15 +58,15 @@ export default function Hero() {
           >
             Contact Us
           </button>
-          <a
-            href="/walkup"
+          <Link
+            to="/walkup"
             className="btn-lightning-outline text-lg inline-flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
             Walk-Up Songs
-          </a>
+          </Link>
         </motion.div>
 
         {/* Scroll Indicator */}
