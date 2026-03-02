@@ -143,7 +143,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
     }
   }
 
-  async function handleSave() {
+  function handleSave() {
     if (!name.trim()) return;
 
     const id = player?.id ?? crypto.randomUUID();
@@ -156,12 +156,8 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
       clipDuration: clipDuration > 0 && clipDuration < audioDuration ? clipDuration : undefined,
     };
 
-    try {
-      if (pendingBlob.current) {
-        await saveAudio(id, pendingBlob.current);
-      }
-    } catch (err) {
-      console.error('Failed to save audio:', err);
+    if (pendingBlob.current) {
+      saveAudio(id, pendingBlob.current);
     }
 
     stopPreview();

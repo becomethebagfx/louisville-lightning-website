@@ -57,9 +57,11 @@ function playerToRow(p: Player, sortOrder?: number) {
 export function useRoster() {
   const [players, setPlayers] = useState<Player[]>(loadLocal)
 
-  // Sync from Supabase on mount
+  // Sync from Supabase on mount + subscribe to realtime changes
   useEffect(() => {
     if (!supabase) return
+
+    // Initial load
     supabase
       .from('players')
       .select('*')
@@ -75,6 +77,30 @@ export function useRoster() {
           saveLocal(fetched)
         }
       })
+
+    // Realtime subscription — keeps all devices in sync
+    const sb = supabase
+    const channel = sb
+      .channel('roster-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => {
+        // On any change, refetch the full sorted roster
+        sb
+          .from('players')
+          .select('*')
+          .order('sort_order')
+          .then(({ data, error }) => {
+            if (!error && data && data.length > 0) {
+              const fetched = data.map(rowToPlayer)
+              setPlayers(fetched)
+              saveLocal(fetched)
+            }
+          })
+      })
+      .subscribe()
+
+    return () => {
+      sb.removeChannel(channel)
+    }
   }, [])
 
   // Persist locally whenever players change
@@ -86,8 +112,8 @@ export function useRoster() {
     setPlayers(prev => {
       const next = [...prev, player]
       if (supabase) {
-        supabase.from('players').insert(playerToRow(player, next.length - 1)).then(({ error }) => {
-          if (error) console.error('Failed to insert player:', error)
+        supabase.from('players').upsert(playerToRow(player, next.length - 1)).then(({ error }) => {
+          if (error) console.error('Failed to add player:', error)
         })
       }
       return next
@@ -96,9 +122,10 @@ export function useRoster() {
 
   const updatePlayer = useCallback((player: Player) => {
     setPlayers(prev => {
+      const idx = prev.findIndex(p => p.id === player.id)
       const next = prev.map(p => (p.id === player.id ? player : p))
       if (supabase) {
-        supabase.from('players').update(playerToRow(player)).eq('id', player.id).then(({ error }) => {
+        supabase.from('players').upsert(playerToRow(player, idx >= 0 ? idx : undefined)).then(({ error }) => {
           if (error) console.error('Failed to update player:', error)
         })
       }
@@ -120,12 +147,10 @@ export function useRoster() {
 
   const reorderPlayers = useCallback((reordered: Player[]) => {
     setPlayers(reordered)
-    const sb = supabase
-    if (sb) {
-      reordered.forEach((p, i) => {
-        sb.from('players').update({ sort_order: i }).eq('id', p.id).then(({ error }) => {
-          if (error) console.error('Failed to reorder player:', error)
-        })
+    if (supabase) {
+      const updates = reordered.map((p, i) => ({ id: p.id, sort_order: i }))
+      supabase.from('players').upsert(updates).then(({ error }) => {
+        if (error) console.error('Failed to reorder players:', error)
       })
     }
   }, [])

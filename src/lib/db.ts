@@ -48,11 +48,13 @@ async function deleteCachedAudio(playerId: string): Promise<void> {
 
 // Public API — Supabase first, IndexedDB as cache/fallback
 
-export async function saveAudio(playerId: string, blob: Blob): Promise<void> {
-  // Save to local cache immediately
-  await cacheAudio(playerId, blob)
+export function saveAudio(playerId: string, blob: Blob): void {
+  // Cache locally (non-blocking — don't let IndexedDB issues stall the UI)
+  cacheAudio(playerId, blob).catch(err =>
+    console.error('IndexedDB audio cache failed:', err)
+  )
 
-  // Upload to Supabase Storage (non-blocking — don't let upload failure prevent save)
+  // Upload to Supabase Storage (non-blocking)
   if (supabase) {
     supabase.storage
       .from(BUCKET)
