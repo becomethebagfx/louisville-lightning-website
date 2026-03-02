@@ -16,9 +16,9 @@ export default function Contact() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="text-stadium text-5xl md:text-7xl lg:text-8xl">
-            <span className="text-white">READY TO</span>
+            <span className="text-white">GET IN</span>
             <br />
-            <span className="text-gradient-gold glow-gold">PLAY?</span>
+            <span className="text-gradient-gold glow-gold">TOUCH</span>
           </h2>
         </motion.div>
 
@@ -29,7 +29,7 @@ export default function Contact() {
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mt-8 text-white/60 text-lg md:text-xl max-w-xl mx-auto"
         >
-          Get in touch with Coach Taylor Davis to learn more about tryouts, tournaments, and joining the Louisville Lightning family.
+          Reach out to Coach Taylor Davis for questions about the team, schedule, or anything Louisville Lightning.
         </motion.p>
 
         {/* Contact Buttons */}
@@ -39,9 +39,8 @@ export default function Contact() {
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
-          {/* Text Button */}
           <a
-            href="sms:5022991804?body=Hi Coach Davis, I'm interested in Louisville Lightning 7U!"
+            href="sms:5022991804?body=Hi Coach Davis!"
             className="btn-lightning text-lg inline-flex items-center gap-3"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -49,8 +48,7 @@ export default function Contact() {
             </svg>
             Text Coach Davis
           </a>
-          
-          {/* Call Button */}
+
           <a
             href="tel:5022991804"
             className="btn-lightning-outline text-lg inline-flex items-center gap-3"
@@ -69,7 +67,7 @@ export default function Contact() {
           transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="mt-6 text-white/40 text-sm"
         >
-          Coach Taylor Davis • (502) 299-1804
+          Coach Taylor Davis &bull; (502) 299-1804
         </motion.p>
 
         {/* Decorative lightning bolts */}

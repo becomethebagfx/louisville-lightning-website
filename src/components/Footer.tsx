@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 export default function Footer() {
@@ -34,20 +35,29 @@ export default function Footer() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
-            className="flex items-center gap-8"
+            className="flex items-center gap-6 md:gap-8 flex-wrap justify-center"
           >
-            {['About', 'Video', 'Tryouts', 'Schedule', 'Contact'].map((item) => (
+            {['About', 'Schedule', 'Contact'].map((item) => (
               <a
                 key={item}
-                href={`#${item.toLowerCase()}`}
+                href={`/#${item.toLowerCase()}`}
                 className="text-white/50 hover:text-gold-500 transition-colors font-accent uppercase tracking-wider text-sm"
               >
                 {item}
               </a>
             ))}
+            <Link
+              to="/walkup"
+              className="text-white/50 hover:text-gold-500 transition-colors font-accent uppercase tracking-wider text-sm flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+              Walk-Up Songs
+            </Link>
           </motion.nav>
 
-          {/* Social/Location */}
+          {/* Location */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -72,7 +82,7 @@ export default function Footer() {
           className="mt-10 pt-6 border-t border-white/5 text-center"
         >
           <p className="text-white/30 text-sm">
-            © {new Date().getFullYear()} Louisville Lightning. All rights reserved.
+            &copy; {new Date().getFullYear()} Louisville Lightning. All rights reserved.
           </p>
         </motion.div>
       </div>

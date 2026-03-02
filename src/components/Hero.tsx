@@ -1,45 +1,29 @@
 import { motion } from 'framer-motion';
 
 export default function Hero() {
-  const scrollToContact = () => {
-    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Content */}
       <div className="relative z-10 text-center px-4 py-20">
-        {/* Logo */}
+        {/* Full Logo (mascot + wordmark) */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-8"
+          className="mb-6"
         >
           <img
-            src="/assets/logo-transparent.png"
+            src="/assets/logo-full.png"
             alt="Louisville Lightning"
-            className="w-48 h-48 md:w-64 md:h-64 mx-auto drop-shadow-[0_0_30px_rgba(245,184,0,0.5)]"
+            className="w-72 md:w-96 lg:w-[28rem] mx-auto drop-shadow-[0_0_40px_rgba(245,184,0,0.4)]"
           />
         </motion.div>
-
-        {/* Team Name */}
-        <motion.h1
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="text-stadium text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight"
-        >
-          <span className="text-white">LOUISVILLE</span>
-          <br />
-          <span className="text-gradient-gold glow-gold">LIGHTNING</span>
-        </motion.h1>
 
         {/* Subtitle */}
         <motion.div
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
           className="mt-6"
         >
           <span className="inline-block px-6 py-2 border-2 border-gold-500 text-gold-500 text-xl md:text-2xl tracking-[0.3em] font-accent uppercase">
@@ -54,22 +38,34 @@ export default function Hero() {
         <motion.p
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="mt-8 text-lg md:text-xl text-white/70 max-w-xl mx-auto font-body"
         >
           Elite youth baseball in Louisville, Kentucky. Building champions on and off the field.
         </motion.p>
 
-        {/* CTA Button */}
+        {/* CTA Buttons */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-10"
+          transition={{ duration: 0.8, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <button onClick={scrollToContact} className="btn-lightning text-lg">
-            Join The Team
+          <button
+            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+            className="btn-lightning text-lg"
+          >
+            Contact Us
           </button>
+          <a
+            href="/walkup"
+            className="btn-lightning-outline text-lg inline-flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+            Walk-Up Songs
+          </a>
         </motion.div>
 
         {/* Scroll Indicator */}

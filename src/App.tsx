@@ -1,29 +1,17 @@
-import LightningBackground from './components/LightningBackground';
-import Hero from './components/Hero';
-import About from './components/About';
-import VideoSection from './components/VideoSection';
-import TryoutInfo from './components/TryoutInfo';
-import Schedule from './components/Schedule';
-import Contact from './components/Contact';
-import Footer from './components/Footer';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomePage from './pages/HomePage';
+import WalkUpPage from './pages/WalkUpPage';
 
 function App() {
   return (
-    <div className="relative min-h-screen">
-      {/* Interactive Lightning Background */}
-      <LightningBackground />
-
-      {/* Main Content */}
-      <main className="relative z-10">
-        <Hero />
-        <About />
-        <VideoSection />
-        <TryoutInfo />
-        <Schedule />
-        <Contact />
-        <Footer />
-      </main>
-    </div>
+    <BrowserRouter>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/walkup" element={<WalkUpPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
