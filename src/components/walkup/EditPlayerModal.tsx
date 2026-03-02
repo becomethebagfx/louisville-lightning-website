@@ -156,8 +156,12 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
       clipDuration: clipDuration > 0 && clipDuration < audioDuration ? clipDuration : undefined,
     };
 
-    if (pendingBlob.current) {
-      await saveAudio(id, pendingBlob.current);
+    try {
+      if (pendingBlob.current) {
+        await saveAudio(id, pendingBlob.current);
+      }
+    } catch (err) {
+      console.error('Failed to save audio:', err);
     }
 
     stopPreview();

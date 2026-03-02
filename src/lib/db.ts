@@ -52,11 +52,14 @@ export async function saveAudio(playerId: string, blob: Blob): Promise<void> {
   // Save to local cache immediately
   await cacheAudio(playerId, blob)
 
-  // Upload to Supabase Storage
+  // Upload to Supabase Storage (non-blocking — don't let upload failure prevent save)
   if (supabase) {
-    await supabase.storage
+    supabase.storage
       .from(BUCKET)
       .upload(`${playerId}.audio`, blob, { upsert: true })
+      .then(({ error }) => {
+        if (error) console.error('Supabase audio upload failed:', error)
+      })
   }
 }
 
