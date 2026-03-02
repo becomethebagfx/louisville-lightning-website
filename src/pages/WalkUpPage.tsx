@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, Reorder } from 'framer-motion';
 import type { Player } from '../lib/types';
 import { useRoster } from '../lib/useRoster';
 import { useAudioPlayer } from '../lib/useAudioPlayer';
@@ -9,7 +9,7 @@ import PlayerCard from '../components/walkup/PlayerCard';
 import EditPlayerModal from '../components/walkup/EditPlayerModal';
 
 export default function WalkUpPage() {
-  const { players, addPlayer, updatePlayer, removePlayer } = useRoster();
+  const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers } = useRoster();
   const { playingId, play, stop } = useAudioPlayer();
   const [editingPlayer, setEditingPlayer] = useState<Player | null | 'new'>(null);
   const [audioVersion, setAudioVersion] = useState(0);
@@ -110,20 +110,30 @@ export default function WalkUpPage() {
             </button>
           </motion.div>
         ) : (
-          <div className="space-y-3">
-            {players.map((player, index) => (
-              <PlayerCard
+          <Reorder.Group
+            axis="y"
+            values={players}
+            onReorder={reorderPlayers}
+            className="space-y-3"
+          >
+            {players.map((player) => (
+              <Reorder.Item
                 key={player.id}
-                player={player}
-                index={index}
-                isPlaying={playingId === player.id}
-                onPlay={() => play(player.id, player.startTime, player.clipDuration)}
-                onStop={stop}
-                onEdit={() => setEditingPlayer(player)}
-                audioVersion={audioVersion}
-              />
+                value={player}
+                className="list-none"
+                whileDrag={{ scale: 1.03, boxShadow: '0 8px 32px rgba(245,184,0,0.3)', zIndex: 50 }}
+              >
+                <PlayerCard
+                  player={player}
+                  isPlaying={playingId === player.id}
+                  onPlay={() => play(player.id, player.startTime, player.clipDuration)}
+                  onStop={stop}
+                  onEdit={() => setEditingPlayer(player)}
+                  audioVersion={audioVersion}
+                />
+              </Reorder.Item>
             ))}
-          </div>
+          </Reorder.Group>
         )}
 
         {/* Add player button */}

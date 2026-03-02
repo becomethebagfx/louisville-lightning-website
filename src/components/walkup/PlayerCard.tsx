@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import type { Player } from '../../lib/types';
 import { getAudio } from '../../lib/db';
 
 interface Props {
   player: Player;
-  index: number;
   isPlaying: boolean;
   onPlay: () => void;
   onStop: () => void;
@@ -13,7 +11,7 @@ interface Props {
   audioVersion: number;
 }
 
-export default function PlayerCard({ player, index, isPlaying, onPlay, onStop, onEdit, audioVersion }: Props) {
+export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, audioVersion }: Props) {
   const [hasAudio, setHasAudio] = useState(false);
 
   useEffect(() => {
@@ -21,17 +19,26 @@ export default function PlayerCard({ player, index, isPlaying, onPlay, onStop, o
   }, [player.id, audioVersion]);
 
   return (
-    <motion.div
-      initial={{ y: 30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, delay: 0.05 * index }}
+    <div
       className={`relative rounded-lg overflow-hidden transition-all duration-300 ${
         isPlaying
           ? 'card-electric box-glow-gold'
           : 'card-electric hover:border-gold-500/40'
       }`}
     >
-      <div className="p-4 flex items-center gap-4">
+      <div className="p-4 flex items-center gap-3">
+        {/* Drag handle */}
+        <div className="flex-shrink-0 cursor-grab active:cursor-grabbing touch-none text-white/20 hover:text-white/40 transition-colors">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.5" />
+            <circle cx="15" cy="6" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="18" r="1.5" />
+            <circle cx="15" cy="18" r="1.5" />
+          </svg>
+        </div>
+
         {/* Jersey number */}
         <div className={`flex-shrink-0 w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-black font-display transition-all ${
           isPlaying
@@ -103,6 +110,6 @@ export default function PlayerCard({ player, index, isPlaying, onPlay, onStop, o
           <div className="h-full bg-gold-500 animate-pulse" style={{ width: '100%' }} />
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

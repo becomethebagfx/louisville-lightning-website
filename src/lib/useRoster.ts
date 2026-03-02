@@ -108,5 +108,15 @@ export function useRoster() {
     })
   }, [])
 
-  return { players, addPlayer, updatePlayer, removePlayer }
+  const reorderPlayers = useCallback((reordered: Player[]) => {
+    setPlayers(reordered)
+    const sb = supabase
+    if (sb) {
+      reordered.forEach((p, i) => {
+        sb.from('players').update({ sort_order: i }).eq('id', p.id).then()
+      })
+    }
+  }, [])
+
+  return { players, addPlayer, updatePlayer, removePlayer, reorderPlayers }
 }
