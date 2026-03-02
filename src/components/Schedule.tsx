@@ -101,12 +101,10 @@ export default function Schedule() {
                 <div>
                   <p className="font-semibold text-white">Indoor (Jan 31 - Mar 21)</p>
                   <p className="text-white/60">Saturdays 2:00-3:30 PM</p>
-                  <p className="text-white/50 text-sm">Smash-Zone, J-Town</p>
                 </div>
                 <div>
                   <p className="font-semibold text-white">Outdoor (Mar - Jun)</p>
                   <p className="text-white/60">Tuesday Evenings 6:00-7:30 PM</p>
-                  <p className="text-white/50 text-sm">Watkins Church (Westport Rd & Hurstbourne)</p>
                 </div>
               </div>
             </div>
