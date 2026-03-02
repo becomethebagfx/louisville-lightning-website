@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import WalkUpPage from './pages/WalkUpPage';
@@ -31,14 +31,14 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 function App() {
   return (
     <ErrorBoundary>
-      <HashRouter>
+      <BrowserRouter>
         <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/walkup" element={<WalkUpPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 }

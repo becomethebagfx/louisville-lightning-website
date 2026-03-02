@@ -2,7 +2,7 @@
   "name": "Louisville Lightning Walk-Up Songs",
   "short_name": "Lightning",
   "description": "Walk-up songs for Louisville Lightning players",
-  "start_url": "/#/walkup",
+  "start_url": "/walkup",
   "display": "standalone",
   "background_color": "#0A0F1C",
   "theme_color": "#0A0F1C",
