@@ -65,7 +65,11 @@ export function useRoster() {
       .select('*')
       .order('sort_order')
       .then(({ data, error }) => {
-        if (!error && data && data.length > 0) {
+        if (error) {
+          console.error('Failed to load roster from Supabase:', error)
+          return
+        }
+        if (data && data.length > 0) {
           const fetched = data.map(rowToPlayer)
           setPlayers(fetched)
           saveLocal(fetched)
@@ -82,7 +86,9 @@ export function useRoster() {
     setPlayers(prev => {
       const next = [...prev, player]
       if (supabase) {
-        supabase.from('players').insert(playerToRow(player, next.length - 1)).then()
+        supabase.from('players').insert(playerToRow(player, next.length - 1)).then(({ error }) => {
+          if (error) console.error('Failed to insert player:', error)
+        })
       }
       return next
     })
@@ -92,7 +98,9 @@ export function useRoster() {
     setPlayers(prev => {
       const next = prev.map(p => (p.id === player.id ? player : p))
       if (supabase) {
-        supabase.from('players').update(playerToRow(player)).eq('id', player.id).then()
+        supabase.from('players').update(playerToRow(player)).eq('id', player.id).then(({ error }) => {
+          if (error) console.error('Failed to update player:', error)
+        })
       }
       return next
     })
@@ -102,7 +110,9 @@ export function useRoster() {
     setPlayers(prev => {
       const next = prev.filter(p => p.id !== id)
       if (supabase) {
-        supabase.from('players').delete().eq('id', id).then()
+        supabase.from('players').delete().eq('id', id).then(({ error }) => {
+          if (error) console.error('Failed to delete player:', error)
+        })
       }
       return next
     })
@@ -113,7 +123,9 @@ export function useRoster() {
     const sb = supabase
     if (sb) {
       reordered.forEach((p, i) => {
-        sb.from('players').update({ sort_order: i }).eq('id', p.id).then()
+        sb.from('players').update({ sort_order: i }).eq('id', p.id).then(({ error }) => {
+          if (error) console.error('Failed to reorder player:', error)
+        })
       })
     }
   }, [])

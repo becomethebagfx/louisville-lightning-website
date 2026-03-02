@@ -44,7 +44,7 @@ export function useAudioPlayer() {
     urlRef.current = url
     audio.src = url
 
-    if (startTime && startTime > 0) {
+    if (typeof startTime === 'number' && startTime >= 0) {
       audio.currentTime = startTime
     }
 
@@ -53,7 +53,7 @@ export function useAudioPlayer() {
       setPlayingId(null)
     }
 
-    if (clipDuration && clipDuration > 0) {
+    if (clipDuration && clipDuration > 0 && clipDuration <= 600) {
       timerRef.current = setTimeout(() => {
         if (requestRef.current === requestId) {
           cleanup()

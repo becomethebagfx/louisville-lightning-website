@@ -54,8 +54,11 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
     return () => stopPreview();
   }, [stopPreview]);
 
+  const [audioError, setAudioError] = useState('');
+
   async function loadAudioBlob(blob: Blob) {
     audioBlobRef.current = blob;
+    setAudioError('');
     const arrayBuffer = await blob.arrayBuffer();
     const audioCtx = new AudioContext();
     try {
@@ -76,6 +79,11 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
       }
       const max = Math.max(...peaks, 0.01);
       setWaveform(peaks.map(p => p / max));
+    } catch (err) {
+      console.error('Failed to decode audio:', err);
+      setAudioError('Could not read this audio file. Try a different format (MP3, M4A, WAV).');
+      setWaveform([]);
+      setAudioDuration(0);
     } finally {
       audioCtx.close();
     }
@@ -203,6 +211,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
+              maxLength={50}
               placeholder="Player name"
               className="w-full px-4 py-3 rounded-lg bg-navy-700 border border-white/10 text-white placeholder-white/25 outline-none focus:border-gold-500/50 transition-colors"
               autoFocus
@@ -229,6 +238,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
               type="text"
               value={songName}
               onChange={e => setSongName(e.target.value)}
+              maxLength={100}
               placeholder="Walk-up song title"
               className="w-full px-4 py-3 rounded-lg bg-navy-700 border border-white/10 text-white placeholder-white/25 outline-none focus:border-gold-500/50 transition-colors"
             />
@@ -240,7 +250,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
             <input
               ref={fileRef}
               type="file"
-              accept="audio/*"
+              accept="audio/*,video/*,.mp3,.m4a,.wav,.aac,.ogg,.mp4,.mov,.webm,.opus,.flac"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -260,6 +270,9 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
                 </button>
               )}
             </div>
+            {audioError && (
+              <p className="mt-1.5 text-xs text-red-400">{audioError}</p>
+            )}
             <p className="mt-1.5 text-xs text-white/30">MP3, M4A, WAV, or any audio format</p>
           </div>
 

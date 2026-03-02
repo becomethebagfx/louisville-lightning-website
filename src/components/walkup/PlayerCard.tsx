@@ -5,6 +5,7 @@ import { getAudio } from '../../lib/db';
 interface Props {
   player: Player;
   isPlaying: boolean;
+  isCoach: boolean;
   onPlay: () => void;
   onStop: () => void;
   onEdit: () => void;
@@ -12,7 +13,7 @@ interface Props {
   onDragStart?: (e: React.PointerEvent) => void;
 }
 
-export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, audioVersion, onDragStart }: Props) {
+export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop, onEdit, audioVersion, onDragStart }: Props) {
   const [hasAudio, setHasAudio] = useState(false);
 
   useEffect(() => {
@@ -28,20 +29,22 @@ export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, 
       }`}
     >
       <div className="p-4 flex items-center gap-3">
-        {/* Drag handle — only this triggers reorder */}
-        <div
-          onPointerDown={onDragStart}
-          className="flex-shrink-0 w-10 h-10 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none text-white/25 hover:text-white/50 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <circle cx="9" cy="6" r="1.5" />
-            <circle cx="15" cy="6" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" />
-            <circle cx="15" cy="12" r="1.5" />
-            <circle cx="9" cy="18" r="1.5" />
-            <circle cx="15" cy="18" r="1.5" />
-          </svg>
-        </div>
+        {/* Drag handle — only this triggers reorder, hidden when locked */}
+        {isCoach && (
+          <div
+            onPointerDown={onDragStart}
+            className="flex-shrink-0 w-10 h-10 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none text-white/25 hover:text-white/50 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="9" cy="6" r="1.5" />
+              <circle cx="15" cy="6" r="1.5" />
+              <circle cx="9" cy="12" r="1.5" />
+              <circle cx="15" cy="12" r="1.5" />
+              <circle cx="9" cy="18" r="1.5" />
+              <circle cx="15" cy="18" r="1.5" />
+            </svg>
+          </div>
+        )}
 
         {/* Jersey number */}
         <div className={`flex-shrink-0 w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-black font-display transition-all ${
@@ -84,7 +87,7 @@ export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, 
               </svg>
             )}
           </button>
-        ) : (
+        ) : isCoach ? (
           <button
             onClick={onEdit}
             aria-label={`Add song for ${player.name}`}
@@ -94,18 +97,20 @@ export default function PlayerCard({ player, isPlaying, onPlay, onStop, onEdit, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
-        )}
+        ) : null}
 
-        {/* Edit button */}
-        <button
-          onClick={onEdit}
-          aria-label={`Edit ${player.name}`}
-          className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/10 transition-all"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
-        </button>
+        {/* Edit button — only in coach mode */}
+        {isCoach && (
+          <button
+            onClick={onEdit}
+            aria-label={`Edit ${player.name}`}
+            className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/10 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Playing indicator */}
