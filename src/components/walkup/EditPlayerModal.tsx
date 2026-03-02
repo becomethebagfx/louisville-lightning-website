@@ -252,10 +252,11 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
               type="file"
               accept="audio/*,video/*,.mp3,.m4a,.wav,.aac,.ogg,.mp4,.mov,.webm,.opus,.flac"
               onChange={handleFileChange}
-              className="hidden"
+              className="absolute w-0 h-0 opacity-0 overflow-hidden"
             />
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => fileRef.current?.click()}
                 className="flex-1 px-4 py-3 rounded-lg bg-navy-700 border border-white/10 text-left text-white/60 hover:border-gold-500/30 transition-colors truncate"
               >
