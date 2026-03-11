@@ -67,8 +67,12 @@ export function saveAudio(playerId: string, blob: Blob): void {
 
 export async function getAudio(playerId: string): Promise<Blob | undefined> {
   // Try local cache first (fast, works offline)
-  const cached = await getCachedAudio(playerId)
-  if (cached) return cached
+  try {
+    const cached = await getCachedAudio(playerId)
+    if (cached) return cached
+  } catch {
+    // IndexedDB unavailable (private browsing, etc.) — fall through to Supabase
+  }
 
   // Fall back to Supabase Storage
   if (supabase) {
@@ -78,7 +82,7 @@ export async function getAudio(playerId: string): Promise<Blob | undefined> {
 
     if (!error && data) {
       // Cache locally for next time
-      await cacheAudio(playerId, data)
+      cacheAudio(playerId, data).catch(() => {})
       return data
     }
   }
@@ -87,7 +91,7 @@ export async function getAudio(playerId: string): Promise<Blob | undefined> {
 }
 
 export async function deleteAudio(playerId: string): Promise<void> {
-  await deleteCachedAudio(playerId)
+  deleteCachedAudio(playerId).catch(() => {})
 
   if (supabase) {
     await supabase.storage

@@ -19,7 +19,6 @@ function ReorderablePlayer({
   onPlay,
   onStop,
   onEdit,
-  audioVersion,
 }: {
   player: Player;
   isPlaying: boolean;
@@ -27,7 +26,6 @@ function ReorderablePlayer({
   onPlay: () => void;
   onStop: () => void;
   onEdit: () => void;
-  audioVersion: number;
 }) {
   const controls = useDragControls();
   return (
@@ -45,7 +43,6 @@ function ReorderablePlayer({
         onPlay={onPlay}
         onStop={onStop}
         onEdit={onEdit}
-        audioVersion={audioVersion}
         onDragStart={(e) => controls.start(e)}
       />
     </Reorder.Item>
@@ -57,7 +54,6 @@ export default function WalkUpPage() {
   const { playingId, play, stop } = useAudioPlayer();
   const { isCoach, unlock, lock } = useCoachMode();
   const [editingPlayer, setEditingPlayer] = useState<Player | null | 'new'>(null);
-  const [audioVersion, setAudioVersion] = useState(0);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
@@ -205,7 +201,6 @@ export default function WalkUpPage() {
                 onPlay={() => play(player.id, player.startTime, player.clipDuration)}
                 onStop={stop}
                 onEdit={() => requireCoach(() => setEditingPlayer(player))}
-                audioVersion={audioVersion}
               />
             ))}
           </Reorder.Group>
@@ -254,7 +249,6 @@ export default function WalkUpPage() {
           onSave={p => {
             if (editingPlayer === 'new') addPlayer(p);
             else updatePlayer(p);
-            setAudioVersion(v => v + 1);
           }}
           onDelete={editingPlayer !== 'new' ? () => handleDelete(editingPlayer.id) : undefined}
           onClose={() => setEditingPlayer(null)}

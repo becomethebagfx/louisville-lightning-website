@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
 import type { Player } from '../../lib/types';
-import { getAudio } from '../../lib/db';
 
 interface Props {
   player: Player;
@@ -9,20 +7,11 @@ interface Props {
   onPlay: () => void;
   onStop: () => void;
   onEdit: () => void;
-  audioVersion: number;
   onDragStart?: (e: React.PointerEvent) => void;
 }
 
-export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop, onEdit, audioVersion, onDragStart }: Props) {
-  const [hasAudio, setHasAudio] = useState(false);
-
-  useEffect(() => {
-    if (!player.songName) {
-      setHasAudio(false);
-      return;
-    }
-    getAudio(player.id).then(blob => setHasAudio(!!blob));
-  }, [player.id, player.songName, audioVersion]);
+export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop, onEdit, onDragStart }: Props) {
+  const hasAudio = !!player.songName;
 
   return (
     <div
