@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, Reorder, useDragControls, AnimatePresence } from 'framer-motion';
 import type { Player } from '../lib/types';
 import { useRoster } from '../lib/useRoster';
 import { useAudioPlayer } from '../lib/useAudioPlayer';
 import { useCoachMode } from '../lib/useCoachMode';
-import { deleteAudio } from '../lib/db';
+import { deleteAudio, preloadAllAudio } from '../lib/db';
 import SpeakerSetup from '../components/walkup/SpeakerSetup';
 import PlayerCard from '../components/walkup/PlayerCard';
 import EditPlayerModal from '../components/walkup/EditPlayerModal';
@@ -58,6 +58,13 @@ export default function WalkUpPage() {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   const playingPlayer = playingId ? players.find(p => p.id === playingId) : null;
+
+  // Preload all audio blobs into memory so play() can access them
+  // synchronously, preserving the Safari user gesture chain.
+  useEffect(() => {
+    const ids = players.filter(p => p.songName).map(p => p.id);
+    if (ids.length > 0) preloadAllAudio(ids);
+  }, [players]);
 
   function requireCoach(action: () => void) {
     if (isCoach) {

@@ -1,22 +1,15 @@
 import { useState, useRef, useCallback } from 'react'
-import { getAudio } from './db'
+import { getAudioSync, getAudio } from './db'
 
-// Use Web Audio API instead of HTML Audio elements.
-// AudioContext.resume() called synchronously in a user gesture permanently
-// unlocks the context — subsequent plays work even after async operations.
-// HTML Audio elements lose their gesture unlock when src changes, which
-// causes inconsistent playback failures on Safari/iOS.
-
-let sharedCtx: AudioContext | null = null
-
-function getCtx(): AudioContext {
-  if (!sharedCtx) sharedCtx = new AudioContext()
-  return sharedCtx
-}
+// Uses HTML Audio elements (not AudioContext) so playback ignores the iOS
+// ringer/silent switch. Audio blobs are preloaded into memory on page mount
+// (see preloadAllAudio in db.ts) so the blob lookup is synchronous — this
+// preserves the user gesture chain that Safari requires for audio.play().
 
 export function useAudioPlayer() {
   const [playingId, setPlayingId] = useState<string | null>(null)
-  const sourceRef = useRef<AudioBufferSourceNode | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const urlRef = useRef<string | null>(null)
   const requestRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -25,10 +18,15 @@ export function useAudioPlayer() {
       clearTimeout(timerRef.current)
       timerRef.current = null
     }
-    if (sourceRef.current) {
-      try { sourceRef.current.stop() } catch { /* already stopped */ }
-      sourceRef.current.disconnect()
-      sourceRef.current = null
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      audioRef.current.onended = null
+      audioRef.current.onloadedmetadata = null
+    }
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current)
+      urlRef.current = null
     }
   }, [])
 
@@ -42,56 +40,100 @@ export function useAudioPlayer() {
     const requestId = ++requestRef.current
     cleanup()
 
-    const ctx = getCtx()
-    // Unlock AudioContext in user gesture — this is synchronous and the
-    // "running" state persists across awaits, unlike HTML Audio elements.
-    if (ctx.state === 'suspended') ctx.resume()
+    // Try sync from preloaded memory cache (preserves gesture chain)
+    let blob = getAudioSync(playerId)
 
-    setPlayingId(playerId)
+    if (blob) {
+      // Fast path: blob in memory, everything stays synchronous in the gesture
+      const url = URL.createObjectURL(blob)
+      urlRef.current = url
 
-    const blob = await getAudio(playerId)
-    if (!blob || requestRef.current !== requestId) {
-      if (requestRef.current === requestId) setPlayingId(null)
-      return
-    }
+      const audio = new Audio()
+      audioRef.current = audio
+      audio.src = url
 
-    let audioBuffer: AudioBuffer
-    try {
-      const arrayBuffer = await blob.arrayBuffer()
-      if (requestRef.current !== requestId) return
-      audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-      if (requestRef.current !== requestId) return
-    } catch {
-      setPlayingId(null)
-      return
-    }
-
-    const source = ctx.createBufferSource()
-    source.buffer = audioBuffer
-    source.connect(ctx.destination)
-    sourceRef.current = source
-
-    const offset = (typeof startTime === 'number' && startTime >= 0) ? startTime : 0
-    const duration = (clipDuration && clipDuration > 0 && clipDuration <= 600) ? clipDuration : undefined
-
-    source.onended = () => {
-      if (requestRef.current === requestId) {
-        cleanup()
-        setPlayingId(null)
-      }
-    }
-
-    if (duration) {
-      source.start(0, offset, duration)
-      // Safety timer in case onended doesn't fire (e.g. page backgrounded)
-      timerRef.current = setTimeout(() => {
+      audio.onended = () => {
         if (requestRef.current === requestId) {
           cleanup()
           setPlayingId(null)
         }
-      }, duration * 1000 + 500)
+      }
+
+      // Wait for metadata so seeking works reliably
+      if (typeof startTime === 'number' && startTime > 0) {
+        await new Promise<void>((resolve) => {
+          audio.onloadedmetadata = () => resolve()
+          setTimeout(resolve, 2000)
+        })
+        if (requestRef.current !== requestId) return
+        audio.currentTime = startTime
+      }
+
+      if (clipDuration && clipDuration > 0 && clipDuration <= 600) {
+        timerRef.current = setTimeout(() => {
+          if (requestRef.current === requestId) {
+            cleanup()
+            setPlayingId(null)
+          }
+        }, clipDuration * 1000)
+      }
+
+      try {
+        setPlayingId(playerId)
+        await audio.play()
+      } catch {
+        cleanup()
+        setPlayingId(null)
+      }
     } else {
-      source.start(0, offset)
+      // Slow path: blob not preloaded yet, fetch async (may fail on Safari
+      // first visit, but will work on retry since it gets cached)
+      setPlayingId(playerId)
+
+      blob = await getAudio(playerId)
+      if (!blob || requestRef.current !== requestId) {
+        if (requestRef.current === requestId) setPlayingId(null)
+        return
+      }
+
+      const url = URL.createObjectURL(blob)
+      urlRef.current = url
+
+      const audio = new Audio()
+      audioRef.current = audio
+      audio.src = url
+
+      audio.onended = () => {
+        if (requestRef.current === requestId) {
+          cleanup()
+          setPlayingId(null)
+        }
+      }
+
+      if (typeof startTime === 'number' && startTime > 0) {
+        await new Promise<void>((resolve) => {
+          audio.onloadedmetadata = () => resolve()
+          setTimeout(resolve, 2000)
+        })
+        if (requestRef.current !== requestId) return
+        audio.currentTime = startTime
+      }
+
+      if (clipDuration && clipDuration > 0 && clipDuration <= 600) {
+        timerRef.current = setTimeout(() => {
+          if (requestRef.current === requestId) {
+            cleanup()
+            setPlayingId(null)
+          }
+        }, clipDuration * 1000)
+      }
+
+      try {
+        await audio.play()
+      } catch {
+        cleanup()
+        setPlayingId(null)
+      }
     }
   }, [cleanup])
 
