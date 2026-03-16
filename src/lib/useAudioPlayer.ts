@@ -22,6 +22,7 @@ export function useAudioPlayer() {
       audioRef.current.pause()
       audioRef.current.onended = null
       audioRef.current.onloadedmetadata = null
+      audioRef.current.remove()
     }
     if (urlRef.current) {
       URL.revokeObjectURL(urlRef.current)
@@ -55,7 +56,11 @@ export function useAudioPlayer() {
     const url = URL.createObjectURL(blob)
     urlRef.current = url
 
-    const audio = new Audio(url)
+    // Append to DOM — Safari handles in-DOM audio elements more reliably
+    const audio = document.createElement('audio')
+    audio.src = url
+    audio.style.display = 'none'
+    document.body.appendChild(audio)
     audioRef.current = audio
 
     // Handle seeking AFTER metadata loads (don't block play)
