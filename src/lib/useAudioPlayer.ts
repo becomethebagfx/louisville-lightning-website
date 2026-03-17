@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback } from 'react'
 import { getAudioSync, getAudio } from './db'
 
-// Fully synchronous play path — no async/await between user tap and
-// audio.play(). Safari/iOS requires play() to happen synchronously
-// within a user gesture. Blobs are preloaded into memory (see db.ts)
-// so we can grab them without any async gap.
+// Audio playback with Safari/iOS compatibility.
+// Blobs are preloaded into memory on page mount (see db.ts). When available,
+// play() grabs the blob synchronously and calls audio.play() within the same
+// user gesture — required by Safari. Falls back to async fetch if preload
+// hasn't finished (works on Chrome, may need a second tap on Safari).
 
 export function useAudioPlayer() {
   const [playingId, setPlayingId] = useState<string | null>(null)
@@ -36,34 +37,23 @@ export function useAudioPlayer() {
     setPlayingId(null)
   }, [cleanup])
 
-  // NOT async — everything between tap and play() is synchronous
-  const play = useCallback((playerId: string, startTime?: number, clipDuration?: number) => {
-    const requestId = ++requestRef.current
-    cleanup()
-
-    // Grab blob synchronously from preloaded memory cache
-    let blob = getAudioSync(playerId)
-
-    if (!blob) {
-      // Not preloaded yet — fetch async and retry via a second click.
-      // This only happens on very first visit before preload completes.
-      getAudio(playerId).then(() => {
-        // Blob is now cached for next tap
-      })
-      return
-    }
-
+  const startPlayback = useCallback((
+    blob: Blob,
+    playerId: string,
+    requestId: number,
+    startTime?: number,
+    clipDuration?: number,
+  ) => {
     const url = URL.createObjectURL(blob)
     urlRef.current = url
 
-    // Append to DOM — Safari handles in-DOM audio elements more reliably
     const audio = document.createElement('audio')
     audio.src = url
+    audio.preload = 'auto'
     audio.style.display = 'none'
     document.body.appendChild(audio)
     audioRef.current = audio
 
-    // Handle seeking AFTER metadata loads (don't block play)
     if (typeof startTime === 'number' && startTime > 0) {
       audio.onloadedmetadata = () => {
         audio.currentTime = startTime
@@ -86,13 +76,37 @@ export function useAudioPlayer() {
       }, clipDuration * 1000)
     }
 
-    // play() is called synchronously within the user gesture — no awaits above
     setPlayingId(playerId)
     audio.play().catch(() => {
       cleanup()
       setPlayingId(null)
     })
   }, [cleanup])
+
+  // NOT async — synchronous path for Safari gesture compatibility
+  const play = useCallback((playerId: string, startTime?: number, clipDuration?: number) => {
+    const requestId = ++requestRef.current
+    cleanup()
+
+    // Try sync from preloaded memory cache (preserves gesture chain for Safari)
+    const blob = getAudioSync(playerId)
+
+    if (blob) {
+      startPlayback(blob, playerId, requestId, startTime, clipDuration)
+    } else {
+      // Async fallback — fetch blob then play.
+      // Works on Chrome always. On Safari, may not play on first tap
+      // (gesture expired), but blob gets cached for next tap.
+      setPlayingId(playerId)
+      getAudio(playerId).then(fetchedBlob => {
+        if (!fetchedBlob || requestRef.current !== requestId) {
+          if (requestRef.current === requestId) setPlayingId(null)
+          return
+        }
+        startPlayback(fetchedBlob, playerId, requestId, startTime, clipDuration)
+      })
+    }
+  }, [cleanup, startPlayback])
 
   return { playingId, play, stop }
 }
