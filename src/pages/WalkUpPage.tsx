@@ -50,12 +50,14 @@ function ReorderablePlayer({
 }
 
 export default function WalkUpPage() {
-  const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers } = useRoster();
+  const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers, saveOrder } = useRoster();
   const { playingId, play, stop } = useAudioPlayer();
   const { isCoach, unlock, lock } = useCoachMode();
   const [editingPlayer, setEditingPlayer] = useState<Player | null | 'new'>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [orderDirty, setOrderDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const playingPlayer = playingId ? players.find(p => p.id === playingId) : null;
 
@@ -85,6 +87,18 @@ export default function WalkUpPage() {
       }
     }
     return ok;
+  }
+
+  function handleReorder(reordered: Player[]) {
+    reorderPlayers(reordered);
+    setOrderDirty(true);
+  }
+
+  async function handleSaveOrder() {
+    setSaving(true);
+    const ok = await saveOrder();
+    setSaving(false);
+    if (ok) setOrderDirty(false);
   }
 
   function handleDelete(id: string) {
@@ -167,6 +181,26 @@ export default function WalkUpPage() {
         {/* Speaker setup */}
         <SpeakerSetup />
 
+        {/* Save Lineup button — top (shown when order changed) */}
+        {isCoach && orderDirty && (
+          <motion.div
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mb-4"
+          >
+            <button
+              onClick={handleSaveOrder}
+              disabled={saving}
+              className="w-full py-3 rounded-lg bg-gold-500 hover:bg-gold-400 text-navy-900 font-accent uppercase tracking-widest text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-gold-500/30 disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {saving ? 'Saving...' : 'Save Lineup Order'}
+            </button>
+          </motion.div>
+        )}
+
         {/* Player list */}
         {players.length === 0 ? (
           <motion.div
@@ -196,7 +230,7 @@ export default function WalkUpPage() {
           <Reorder.Group
             axis="y"
             values={players}
-            onReorder={reorderPlayers}
+            onReorder={handleReorder}
             className="space-y-3"
           >
             {players.map((player) => (
@@ -229,6 +263,26 @@ export default function WalkUpPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add Player
+            </button>
+          </motion.div>
+        )}
+
+        {/* Save Lineup button — bottom (shown when order changed) */}
+        {isCoach && orderDirty && (
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mt-4"
+          >
+            <button
+              onClick={handleSaveOrder}
+              disabled={saving}
+              className="w-full py-3 rounded-lg bg-gold-500 hover:bg-gold-400 text-navy-900 font-accent uppercase tracking-widest text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-gold-500/30 disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {saving ? 'Saving...' : 'Save Lineup Order'}
             </button>
           </motion.div>
         )}

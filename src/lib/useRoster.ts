@@ -147,13 +147,24 @@ export function useRoster() {
 
   const reorderPlayers = useCallback((reordered: Player[]) => {
     setPlayers(reordered)
-    if (supabase) {
-      const updates = reordered.map((p, i) => ({ id: p.id, sort_order: i }))
-      supabase.from('players').upsert(updates).then(({ error }) => {
-        if (error) console.error('Failed to reorder players:', error)
-      })
-    }
   }, [])
 
-  return { players, addPlayer, updatePlayer, removePlayer, reorderPlayers }
+  const saveOrder = useCallback(async (): Promise<boolean> => {
+    const sb = supabase
+    if (!sb) return true
+    // Use individual updates instead of upsert (upsert fails due to NOT NULL columns)
+    const results = await Promise.all(
+      players.map((p, i) =>
+        sb.from('players').update({ sort_order: i }).eq('id', p.id)
+      )
+    )
+    const failed = results.filter(r => r.error)
+    if (failed.length > 0) {
+      console.error('Failed to save order:', failed.map(r => r.error))
+      return false
+    }
+    return true
+  }, [players])
+
+  return { players, addPlayer, updatePlayer, removePlayer, reorderPlayers, saveOrder }
 }
