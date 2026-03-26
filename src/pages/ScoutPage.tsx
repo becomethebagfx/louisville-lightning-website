@@ -4,6 +4,9 @@ import { useCoachMode } from '../lib/useCoachMode'
 import PinModal from '../components/walkup/PinModal'
 import { scoutTeams } from '../lib/scoutData'
 import type { ScoutTeam, ScoutPlayer, AtBat } from '../lib/scoutData'
+import { useScoutObservations } from '../lib/useScoutObservations'
+import LiveScoutInput from '../components/scout/LiveScoutInput'
+import LiveScoutView from '../components/scout/LiveScoutView'
 
 /* ─────────────── Spray Chart SVG ─────────────── */
 function SprayChart({ plays }: { plays: AtBat[] }) {
@@ -348,11 +351,21 @@ function TeamCard({
 }
 
 /* ─────────────── Main Scout Page ─────────────── */
+type ScoutTab = 'teams' | 'live' | 'add'
+
 export default function ScoutPage() {
   const { isCoach, unlock } = useCoachMode()
   const [showPinModal, setShowPinModal] = useState(!isCoach)
   const [selectedTeam, setSelectedTeam] = useState<ScoutTeam | null>(null)
   const [selectedPlayer, setSelectedPlayer] = useState<ScoutPlayer | null>(null)
+  const [activeTab, setActiveTab] = useState<ScoutTab>('teams')
+  const { scoutedTeams, addObservation, isConnected } = useScoutObservations()
+
+  // Collect recent team names for autocomplete
+  const recentTeamNames = [
+    ...scoutedTeams.map(t => t.teamName),
+    ...scoutTeams.map(t => t.name),
+  ].filter((v, i, a) => a.indexOf(v) === i)
 
   function handlePinUnlock(pin: string): boolean {
     const ok = unlock(pin)
@@ -420,7 +433,7 @@ export default function ScoutPage() {
             <span className="text-white">OPPONENT</span>{' '}
             <span className="text-gradient-gold glow-gold-subtle">SCOUT</span>
           </motion.h1>
-          {selectedTeam && (
+          {selectedTeam && activeTab === 'teams' && (
             <motion.button
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -436,51 +449,141 @@ export default function ScoutPage() {
         </div>
       </div>
 
+      {/* Tab Bar */}
+      <div className="max-w-lg mx-auto px-4 pt-4">
+        <div className="flex rounded-xl bg-navy-800 border border-white/5 p-1">
+          {([
+            { key: 'teams' as ScoutTab, label: 'Teams', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+            { key: 'live' as ScoutTab, label: 'Live Data', icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' },
+            { key: 'add' as ScoutTab, label: 'Add', icon: 'M12 4v16m8-8H4' },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); if (tab.key !== 'teams') { setSelectedTeam(null); setSelectedPlayer(null) } }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-accent uppercase tracking-wider transition-all ${
+                activeTab === tab.key
+                  ? 'bg-gold-500/10 text-gold-500'
+                  : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
+              </svg>
+              {tab.label}
+              {tab.key === 'live' && scoutedTeams.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-gold-500/20 text-gold-500 text-[9px] font-bold">
+                  {scoutedTeams.reduce((s, t) => s + t.totalObservations, 0)}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Content */}
       <div className="max-w-lg mx-auto px-4 py-6">
-        {!selectedTeam ? (
-          /* Team selector */
-          <div className="space-y-4">
-            <p className="text-white/40 text-sm font-accent uppercase tracking-wider text-center mb-2">
-              Select a team to scout
-            </p>
-            {scoutTeams.map((team, i) => (
-              <TeamCard
-                key={team.id}
-                team={team}
-                onClick={() => setSelectedTeam(team)}
-                index={i}
-              />
-            ))}
-          </div>
-        ) : (
-          /* Lineup view */
+        {activeTab === 'teams' && (
+          <>
+            {!selectedTeam ? (
+              /* Team selector */
+              <div className="space-y-4">
+                <p className="text-white/40 text-sm font-accent uppercase tracking-wider text-center mb-2">
+                  Select a team to scout
+                </p>
+                {scoutTeams.map((team, i) => (
+                  <TeamCard
+                    key={team.id}
+                    team={team}
+                    onClick={() => setSelectedTeam(team)}
+                    index={i}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* Lineup view */
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-accent uppercase tracking-wider text-white font-bold">
+                      {selectedTeam.name}
+                    </h2>
+                    <p className="text-white/40 text-xs mt-0.5">
+                      Batting order &middot; {selectedTeam.gameDate}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-black font-accent text-gold-500">{selectedTeam.teamAvg}</span>
+                    <p className="text-white/40 text-[10px]">TEAM AVG</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {selectedTeam.players.map((player, i) => (
+                    <LineupCard
+                      key={`${player.number}-${i}`}
+                      player={player}
+                      index={i}
+                      onClick={() => setSelectedPlayer(player)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'live' && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-accent uppercase tracking-wider text-white font-bold">
-                  {selectedTeam.name}
+                  Live Observations
                 </h2>
                 <p className="text-white/40 text-xs mt-0.5">
-                  Batting order &middot; {selectedTeam.gameDate}
+                  Scouted by coaches in real-time
                 </p>
               </div>
-              <div className="text-right">
-                <span className="text-xl font-black font-accent text-gold-500">{selectedTeam.teamAvg}</span>
-                <p className="text-white/40 text-[10px]">TEAM AVG</p>
-              </div>
+              {!isConnected && (
+                <span className="px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-accent">
+                  OFFLINE
+                </span>
+              )}
             </div>
+            <LiveScoutView teams={scoutedTeams} />
+          </div>
+        )}
 
-            <div className="space-y-2">
-              {selectedTeam.players.map((player, i) => (
-                <LineupCard
-                  key={`${player.number}-${i}`}
-                  player={player}
-                  index={i}
-                  onClick={() => setSelectedPlayer(player)}
-                />
-              ))}
+        {activeTab === 'add' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-accent uppercase tracking-wider text-white font-bold">
+                  Add Observation
+                </h2>
+                <p className="text-white/40 text-xs mt-0.5">
+                  Quick-log what you see at the game
+                </p>
+              </div>
+              {!isConnected && (
+                <span className="px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-accent">
+                  OFFLINE
+                </span>
+              )}
             </div>
+            {isConnected ? (
+              <LiveScoutInput
+                onSubmit={addObservation}
+                recentTeams={recentTeamNames}
+              />
+            ) : (
+              <div className="text-center py-12 space-y-3">
+                <svg className="w-12 h-12 mx-auto text-red-400/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728" />
+                </svg>
+                <p className="text-white/40 text-sm">Database not connected</p>
+                <p className="text-white/20 text-xs">Supabase environment variables are required for live scouting</p>
+              </div>
+            )}
           </div>
         )}
       </div>
