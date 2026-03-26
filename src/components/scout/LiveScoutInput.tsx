@@ -86,10 +86,12 @@ export default function LiveScoutInput({ onSubmit, recentTeams }: Props) {
     setNotes(prev => prev ? `${prev} ${text}` : text)
   }, [])
 
-  // Filter suggestions
-  const suggestions = recentTeams.filter(t =>
-    t.toLowerCase().includes(teamName.toLowerCase()) && t.toLowerCase() !== teamName.toLowerCase()
-  )
+  // Filter suggestions -- show all teams when field is empty/focused, filter when typing
+  const suggestions = teamName.trim()
+    ? recentTeams.filter(t =>
+        t.toLowerCase().includes(teamName.toLowerCase()) && t.toLowerCase() !== teamName.toLowerCase()
+      )
+    : recentTeams
 
   return (
     <div className="space-y-4">

@@ -262,7 +262,7 @@ function LineupCard({
       animate={{ x: 0, opacity: 1 }}
       transition={{ delay: index * 0.04 }}
       onClick={onClick}
-      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.98] ${threatLevel}`}
+      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.98] overflow-hidden ${threatLevel}`}
     >
       {/* Lineup # */}
       <span className="text-white/20 text-xs font-accent w-4 text-right shrink-0">
@@ -359,11 +359,11 @@ export default function ScoutPage() {
   const [selectedTeam, setSelectedTeam] = useState<ScoutTeam | null>(null)
   const [selectedPlayer, setSelectedPlayer] = useState<ScoutPlayer | null>(null)
   const [activeTab, setActiveTab] = useState<ScoutTab>('teams')
-  const { scoutedTeams, addObservation, isConnected } = useScoutObservations()
+  const { scoutedTeams, teamNames, addObservation, updateObservation, deleteObservation, isConnected } = useScoutObservations()
 
-  // Collect recent team names for autocomplete
+  // Collect recent team names for autocomplete (from live DB + static data)
   const recentTeamNames = [
-    ...scoutedTeams.map(t => t.teamName),
+    ...teamNames,
     ...scoutTeams.map(t => t.name),
   ].filter((v, i, a) => a.indexOf(v) === i)
 
@@ -405,9 +405,9 @@ export default function ScoutPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen pt-16 overflow-x-hidden">
       {/* Hero header */}
-      <div className="relative py-10 md:py-14 bg-navy-800 overflow-hidden">
+      <div className="relative py-10 md:py-14 bg-navy-800 overflow-hidden max-w-full">
         <div className="absolute inset-0 stripe-pattern opacity-50" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-500/50 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-500/50 to-transparent" />
@@ -549,7 +549,7 @@ export default function ScoutPage() {
                 </span>
               )}
             </div>
-            <LiveScoutView teams={scoutedTeams} />
+            <LiveScoutView teams={scoutedTeams} onUpdate={updateObservation} onDelete={deleteObservation} />
           </div>
         )}
 

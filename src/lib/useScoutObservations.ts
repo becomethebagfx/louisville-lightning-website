@@ -108,8 +108,17 @@ export function useScoutObservations() {
     const channel = supabase
       .channel('scout-obs-sync')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'scout_observations' }, (payload) => {
-        // Append new observation to the front (most recent first)
-        setObservations(prev => [payload.new as ScoutObservation, ...prev])
+        setObservations(prev => {
+          // Avoid duplicates (local state may already have it)
+          if (prev.some(o => o.id === (payload.new as ScoutObservation).id)) return prev
+          return [payload.new as ScoutObservation, ...prev]
+        })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'scout_observations' }, (payload) => {
+        setObservations(prev => prev.map(o => o.id === (payload.new as ScoutObservation).id ? payload.new as ScoutObservation : o))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'scout_observations' }, (payload) => {
+        setObservations(prev => prev.filter(o => o.id !== (payload.old as { id: string }).id))
       })
       .subscribe()
 
@@ -134,14 +143,58 @@ export function useScoutObservations() {
     return true
   }, [])
 
+  // Update an existing observation
+  const updateObservation = useCallback(async (id: string, updates: Partial<NewObservation>): Promise<boolean> => {
+    if (!supabase) return false
+
+    const { error: err } = await supabase
+      .from('scout_observations')
+      .update(updates)
+      .eq('id', id)
+
+    if (err) {
+      console.error('Failed to update scout observation:', err)
+      setError(err.message)
+      return false
+    }
+    // Update local state immediately
+    setObservations(prev => prev.map(o => o.id === id ? { ...o, ...updates } as ScoutObservation : o))
+    return true
+  }, [])
+
+  // Delete an observation
+  const deleteObservation = useCallback(async (id: string): Promise<boolean> => {
+    if (!supabase) return false
+
+    const { error: err } = await supabase
+      .from('scout_observations')
+      .delete()
+      .eq('id', id)
+
+    if (err) {
+      console.error('Failed to delete scout observation:', err)
+      setError(err.message)
+      return false
+    }
+    // Remove from local state immediately
+    setObservations(prev => prev.filter(o => o.id !== id))
+    return true
+  }, [])
+
   const scoutedTeams = groupObservations(observations)
+
+  // Distinct team names for dropdown
+  const teamNames = [...new Set(observations.map(o => o.team_name))].sort()
 
   return {
     observations,
     scoutedTeams,
+    teamNames,
     loading,
     error,
     addObservation,
+    updateObservation,
+    deleteObservation,
     refetch: fetchAll,
     isConnected: !!supabase,
   }
