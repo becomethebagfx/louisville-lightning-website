@@ -110,7 +110,7 @@ export default function Contact() {
           {[...Array(3)].map((_, i) => (
             <svg
               key={i}
-              className="w-6 h-6 text-gold-500/30"
+              className="w-6 h-6 text-gold-500/50"
               fill="currentColor"
               viewBox="0 0 24 24"
             >

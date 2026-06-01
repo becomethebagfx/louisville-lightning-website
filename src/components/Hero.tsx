@@ -5,18 +5,18 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Content */}
-      <div className="relative z-10 text-center px-4 py-20">
+      <div className="relative z-10 text-center px-4 py-12">
         {/* Full Logo (mascot + wordmark) */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-6"
+          className="mb-4"
         >
           <img
             src="/assets/logo-full.png"
             alt="Louisville Lightning"
-            className="w-72 md:w-96 lg:w-[28rem] mx-auto drop-shadow-[0_0_40px_rgba(245,184,0,0.4)]"
+            className="mx-auto w-auto max-w-[78vw] max-h-[40vh] sm:max-h-[42vh] lg:max-h-[44vh] object-contain drop-shadow-[0_0_40px_rgba(245,184,0,0.4)]"
           />
         </motion.div>
 

@@ -93,7 +93,7 @@ export default function About() {
                     <h3 className="text-xl font-bold text-white font-accent uppercase tracking-wide">
                       {feature.title}
                     </h3>
-                    <p className="mt-2 text-white/60 leading-relaxed">
+                    <p className="mt-2 text-white/70 leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
