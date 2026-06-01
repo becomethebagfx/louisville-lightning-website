@@ -30,6 +30,8 @@ export default function TryoutsPage() {
       <main className="relative z-10">
         {/* Header */}
         <section className="relative pt-20 pb-10 md:pt-28 md:pb-14 text-center px-4">
+          {/* Fade into the solid sections below */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-navy-900 pointer-events-none" />
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -73,7 +75,7 @@ export default function TryoutsPage() {
         </section>
 
         {/* Age-group tryout cards */}
-        <section className="relative pb-8 px-4">
+        <section className="relative bg-navy-900 pt-8 pb-8 px-4">
           <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 lg:gap-8">
             {TRYOUT_GROUPS.map((g, i) => (
               <motion.div
@@ -109,6 +111,12 @@ export default function TryoutsPage() {
                       </div>
                     ))}
                   </div>
+
+                  {g.sessions.length > 1 && (
+                    <p className="mt-3 text-gold-400/80 text-sm">
+                      Two dates are offered so families can work around vacations. Players only need to attend one.
+                    </p>
+                  )}
 
                   {/* Eligibility */}
                   <div className="mt-6 pt-5 border-t border-white/10 space-y-1">
@@ -152,7 +160,7 @@ export default function TryoutsPage() {
         </section>
 
         {/* Location */}
-        <section className="relative py-12 px-4">
+        <section className="relative bg-navy-900 py-12 px-4">
           <motion.div
             {...fadeUp}
             transition={{ duration: 0.8, ease }}
@@ -191,7 +199,7 @@ export default function TryoutsPage() {
         </section>
 
         {/* Motto */}
-        <section className="relative pb-20 px-4">
+        <section className="relative bg-navy-900 pb-20 px-4">
           <motion.div
             {...fadeUp}
             transition={{ duration: 0.8, ease }}
