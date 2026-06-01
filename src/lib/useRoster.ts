@@ -78,7 +78,7 @@ export function useRoster() {
         }
       })
 
-    // Realtime subscription — keeps all devices in sync
+    // Realtime subscription - keeps all devices in sync
     const sb = supabase
     const channel = sb
       .channel('roster-sync')

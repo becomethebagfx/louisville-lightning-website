@@ -4,7 +4,7 @@ import { getAudioSync, getAudio } from './db'
 // Audio playback with Safari/iOS compatibility.
 // Blobs are preloaded into memory on page mount (see db.ts). When available,
 // play() grabs the blob synchronously and calls audio.play() within the same
-// user gesture — required by Safari. Falls back to async fetch if preload
+// user gesture - required by Safari. Falls back to async fetch if preload
 // hasn't finished (works on Chrome, may need a second tap on Safari).
 
 export function useAudioPlayer() {
@@ -83,7 +83,7 @@ export function useAudioPlayer() {
     })
   }, [cleanup])
 
-  // NOT async — synchronous path for Safari gesture compatibility
+  // NOT async - synchronous path for Safari gesture compatibility
   const play = useCallback((playerId: string, startTime?: number, clipDuration?: number) => {
     const requestId = ++requestRef.current
     cleanup()
@@ -94,7 +94,7 @@ export function useAudioPlayer() {
     if (blob) {
       startPlayback(blob, playerId, requestId, startTime, clipDuration)
     } else {
-      // Async fallback — fetch blob then play.
+      // Async fallback - fetch blob then play.
       // Works on Chrome always. On Safari, may not play on first tap
       // (gesture expired), but blob gets cached for next tap.
       setPlayingId(playerId)

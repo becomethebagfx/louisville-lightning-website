@@ -24,7 +24,7 @@ export default function Footer() {
                 LOUISVILLE <span className="text-gold-500">LIGHTNING</span>
               </div>
               <div className="text-xs text-white/40 font-accent uppercase tracking-wider">
-                7U Travel Baseball
+                8U &amp; 9U Travel Baseball
               </div>
             </div>
           </motion.div>
@@ -37,7 +37,7 @@ export default function Footer() {
             viewport={{ once: true }}
             className="flex items-center gap-6 md:gap-8 flex-wrap justify-center"
           >
-            {['About', 'Schedule', 'Contact'].map((item) => (
+            {['About', 'Contact'].map((item) => (
               <a
                 key={item}
                 href={`#${item.toLowerCase()}`}
@@ -50,6 +50,12 @@ export default function Footer() {
                 {item}
               </a>
             ))}
+            <Link
+              to="/tryouts"
+              className="text-gold-400 hover:text-gold-300 transition-colors font-accent uppercase tracking-wider text-sm"
+            >
+              Tryouts
+            </Link>
             <Link
               to="/walkup"
               className="text-white/50 hover:text-gold-500 transition-colors font-accent uppercase tracking-wider text-sm flex items-center gap-1.5"

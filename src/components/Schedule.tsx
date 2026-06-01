@@ -1,14 +1,8 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
-
-const tournaments = [
-  { date: 'Mar 28-29', label: 'Tournament 1' },
-  { date: 'Apr 25-26', label: 'Tournament 2' },
-  { date: 'May 16-17', label: 'Tournament 3' },
-  { date: 'Jun 6-7', label: 'Tournament 4' },
-  { date: 'Jun 13-14', label: 'Tournament 5' },
-];
+import { Link } from 'react-router-dom';
+import { TRYOUT_GROUPS, TRYOUT_LOCATION } from '../lib/tryoutData';
 
 const coaches = [
   'Taylor Davis',
@@ -16,6 +10,7 @@ const coaches = [
   'Aaron Schecter',
   'Shawn Kittle',
   'Brandon Hayman',
+  'Josh Deacon',
 ];
 
 export default function Schedule() {
@@ -36,7 +31,7 @@ export default function Schedule() {
           className="text-center mb-16"
         >
           <span className="text-gold-500 font-accent uppercase tracking-[0.2em] text-sm">
-            2026 Season
+            Now Recruiting · 8U &amp; 9U
           </span>
           <h2 className="text-stadium text-4xl md:text-6xl mt-4">
             <span className="text-white">THE</span>{' '}
@@ -51,42 +46,58 @@ export default function Schedule() {
             animate={isInView ? { y: 0, opacity: 1 } : {}}
             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Tournaments */}
+            {/* Tryouts */}
             <div className="mb-10">
               <h3 className="text-xl font-bold text-gold-500 font-accent uppercase tracking-wide mb-4 flex items-center justify-center gap-2">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Tournament Schedule
+                Tryout Dates
               </h3>
               <div className="space-y-3">
-                {tournaments.map((t, i) => (
+                {TRYOUT_GROUPS.map((g) => (
                   <div
-                    key={i}
+                    key={g.ageGroup}
                     className="flex items-center justify-center gap-4 text-white/80"
                   >
-                    <span className="text-gold-500 font-accent font-bold w-24 text-right">{t.date}</span>
-                    <span className="text-white/50">—</span>
-                    <span className="w-28">{t.label}</span>
+                    <span className="text-gold-500 font-accent font-bold w-12 text-right">{g.ageGroup}</span>
+                    <span className="text-white/30">|</span>
+                    <span className="w-48 text-left">
+                      {g.sessions.map((s) => `${s.weekday}, ${s.date}`).join(' & ')}
+                    </span>
                   </div>
                 ))}
               </div>
               <p className="mt-4 text-white/50 text-sm text-center">
-                3-game guarantee per tournament. All tournaments local (within 1 hour).
+                Both age groups: 4:00 to 6:00 PM.
               </p>
             </div>
 
-            {/* League */}
+            {/* Location */}
             <div className="mb-10">
               <h3 className="text-xl font-bold text-gold-500 font-accent uppercase tracking-wide mb-4 flex items-center justify-center gap-2">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Wednesday Night League
+                Location
               </h3>
               <p className="text-white/80 text-center">
-                April 15th through end of May
+                {TRYOUT_LOCATION.name}
+                <br />
+                <span className="text-white/50 text-sm">
+                  {TRYOUT_LOCATION.address}, {TRYOUT_LOCATION.cityState}
+                </span>
               </p>
+            </div>
+
+            <div className="text-center">
+              <Link to="/tryouts" className="btn-lightning text-sm inline-flex items-center gap-2">
+                Full Tryout Info
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
             </div>
 
           </motion.div>

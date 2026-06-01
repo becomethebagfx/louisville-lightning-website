@@ -22,7 +22,7 @@ export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop,
       }`}
     >
       <div className="p-4 flex items-center gap-3">
-        {/* Drag handle — only this triggers reorder, hidden when locked */}
+        {/* Drag handle - only this triggers reorder, hidden when locked */}
         {isCoach && (
           <div
             onPointerDown={onDragStart}
@@ -92,7 +92,7 @@ export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop,
           </button>
         ) : null}
 
-        {/* Edit button — only in coach mode */}
+        {/* Edit button - only in coach mode */}
         {isCoach && (
           <button
             onClick={onEdit}

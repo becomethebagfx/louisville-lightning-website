@@ -181,7 +181,7 @@ export default function WalkUpPage() {
         {/* Speaker setup */}
         <SpeakerSetup />
 
-        {/* Save Lineup button — top (shown when order changed) */}
+        {/* Save Lineup button - top (shown when order changed) */}
         {isCoach && orderDirty && (
           <motion.div
             initial={{ y: -10, opacity: 0 }}
@@ -247,7 +247,7 @@ export default function WalkUpPage() {
           </Reorder.Group>
         )}
 
-        {/* Add player button — only in coach mode */}
+        {/* Add player button - only in coach mode */}
         {players.length > 0 && isCoach && (
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -267,7 +267,7 @@ export default function WalkUpPage() {
           </motion.div>
         )}
 
-        {/* Save Lineup button — bottom (shown when order changed) */}
+        {/* Save Lineup button - bottom (shown when order changed) */}
         {isCoach && orderDirty && (
           <motion.div
             initial={{ y: 10, opacity: 0 }}

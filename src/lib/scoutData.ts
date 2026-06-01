@@ -137,7 +137,7 @@ export const scoutTeams: ScoutTeam[] = [
         avg: '1.000',
         hits: 2, atBats: 2, singles: 2, doubles: 0, triples: 0, homeRuns: 0,
         rbi: 0, strikeouts: 0, walks: 0,
-        summary: 'Their best hitter. 2-for-2. Fly balls up the middle — CF and pitcher area.',
+        summary: 'Their best hitter. 2-for-2. Fly balls up the middle - CF and pitcher area.',
         plays: [
           { description: 'Singled on a fly ball to center fielder', result: 'hit', location: { x: 48, y: 22 } },
           { description: 'Singled on a pop fly to pitcher', result: 'hit', location: { x: 50, y: 55 } },
@@ -263,7 +263,7 @@ export const scoutTeams: ScoutTeam[] = [
         avg: '.667',
         hits: 2, atBats: 3, singles: 1, doubles: 0, triples: 1, homeRuns: 0,
         rbi: 1, strikeouts: 0, walks: 0,
-        summary: 'Dangerous. 2-for-3 with a triple. Hits hard to left/center — SS and short fielder.',
+        summary: 'Dangerous. 2-for-3 with a triple. Hits hard to left/center - SS and short fielder.',
         plays: [
           { description: 'Grounded out to shortstop', result: 'out', location: { x: 35, y: 48 } },
           { description: 'Tripled on a hard ground ball to short fielder', result: 'hit', location: { x: 55, y: 28 } },
@@ -358,7 +358,7 @@ export const scoutTeams: ScoutTeam[] = [
         avg: '.000',
         hits: 0, atBats: 2, singles: 0, doubles: 0, triples: 0, homeRuns: 0,
         rbi: 0, strikeouts: 0, walks: 0,
-        summary: 'No hits. Both FCs — one to short CF, one to right side. Weak ground balls.',
+        summary: 'No hits. Both FCs - one to short CF, one to right side. Weak ground balls.',
         plays: [
           { description: 'Grounded into fielder\'s choice', result: 'out', location: { x: 42, y: 30 } },
           { description: 'Grounded into fielder\'s choice', result: 'out', location: { x: 62, y: 45 } },

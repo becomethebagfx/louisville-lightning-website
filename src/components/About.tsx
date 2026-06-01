@@ -67,7 +67,7 @@ export default function About() {
             <span className="text-gradient-gold">CHAMPIONS</span>
           </h2>
           <p className="mt-6 text-white/60 max-w-2xl mx-auto text-lg">
-            Growth, discipline, and learning the game the right way. Our number one goal is to have fun — this is a game after all!
+            Growth, discipline, and learning the game the right way. Our number one goal is to have fun - this is a game after all!
           </p>
         </motion.div>
 
@@ -111,7 +111,7 @@ export default function About() {
           className="mt-16 grid grid-cols-3 gap-8 text-center"
         >
           {[
-            { value: '7U', label: 'Age Group (Born 5/1/2018+)' },
+            { value: '8U · 9U', label: 'Age Groups' },
             { value: '5+', label: 'Tournaments' },
             { value: '2026', label: 'Season' },
           ].map((stat) => (

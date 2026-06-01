@@ -28,11 +28,32 @@ export default function Hero() {
           className="mt-6"
         >
           <span className="inline-block px-6 py-2 border-2 border-gold-500 text-gold-500 text-xl md:text-2xl tracking-[0.3em] font-accent uppercase">
-            7U Travel Baseball
+            8U &amp; 9U Travel Baseball
           </span>
-          <p className="mt-2 text-sm text-gold-400/80">
-            Players must be born on or after May 1, 2018
-          </p>
+        </motion.div>
+
+        {/* Tryouts banner */}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-6"
+        >
+          <Link
+            to="/tryouts"
+            className="group inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-gold-500/10 border border-gold-500/40 hover:bg-gold-500/20 hover:border-gold-500/70 transition-all"
+          >
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold-500" />
+            </span>
+            <span className="text-gold-400 group-hover:text-gold-300 font-accent uppercase tracking-[0.15em] text-sm md:text-base">
+              Tryouts Now Open · 8U &amp; 9U
+            </span>
+            <svg className="w-4 h-4 text-gold-400 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </Link>
         </motion.div>
 
         {/* Tagline */}
@@ -52,12 +73,15 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <button
-            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-            className="btn-lightning text-lg"
+          <Link
+            to="/tryouts"
+            className="btn-lightning text-lg inline-flex items-center justify-center gap-2"
           >
-            Contact Us
-          </button>
+            Tryout Info
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </Link>
           <Link
             to="/walkup"
             className="btn-lightning-outline text-lg inline-flex items-center justify-center gap-2"

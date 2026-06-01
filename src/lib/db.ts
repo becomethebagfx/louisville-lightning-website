@@ -46,7 +46,7 @@ async function deleteCachedAudio(playerId: string): Promise<void> {
   })
 }
 
-// In-memory cache — preloaded on page mount so play() can grab blobs
+// In-memory cache - preloaded on page mount so play() can grab blobs
 // synchronously, preserving the user gesture chain on Safari/iOS.
 const memCache = new Map<string, Blob>()
 
@@ -62,12 +62,12 @@ export function getAudioSync(playerId: string): Blob | undefined {
   return memCache.get(playerId)
 }
 
-// Public API — Supabase first, IndexedDB as cache/fallback
+// Public API - Supabase first, IndexedDB as cache/fallback
 
 export function saveAudio(playerId: string, blob: Blob): void {
   memCache.set(playerId, blob)
 
-  // Cache locally (non-blocking — don't let IndexedDB issues stall the UI)
+  // Cache locally (non-blocking - don't let IndexedDB issues stall the UI)
   cacheAudio(playerId, blob).catch(err =>
     console.error('IndexedDB audio cache failed:', err)
   )
@@ -96,7 +96,7 @@ export async function getAudio(playerId: string): Promise<Blob | undefined> {
       return cached
     }
   } catch {
-    // IndexedDB unavailable (private browsing, etc.) — fall through to Supabase
+    // IndexedDB unavailable (private browsing, etc.) - fall through to Supabase
   }
 
   // Fall back to Supabase Storage
