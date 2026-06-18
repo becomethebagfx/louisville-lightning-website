@@ -33,8 +33,8 @@ export const TRYOUT_GROUPS: TryoutGroup[] = [
   {
     ageGroup: '8U',
     sessions: [
+      { weekday: 'Sunday', date: 'July 19' },
       { weekday: 'Sunday', date: 'July 26' },
-      { weekday: 'Sunday', date: 'August 2' },
     ],
     time: '4:00 to 6:00 PM',
     ageRule: 'Players cannot turn 9 before May 1',
