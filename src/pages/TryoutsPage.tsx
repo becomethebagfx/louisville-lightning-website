@@ -102,12 +102,14 @@ export default function TryoutsPage() {
                       >
                         <div className="text-white">
                           <div className="font-accent uppercase tracking-wide text-lg">
-                            {s.weekday}, {s.date}
+                            {s.weekday ? `${s.weekday}, ${s.date}` : s.date}
                           </div>
                         </div>
-                        <span className="text-gold-500 font-accent font-bold whitespace-nowrap">
-                          {g.time}
-                        </span>
+                        {g.time !== 'TBD' && (
+                          <span className="text-gold-500 font-accent font-bold whitespace-nowrap">
+                            {g.time}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>

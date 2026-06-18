@@ -63,13 +63,13 @@ export default function Schedule() {
                     <span className="text-gold-500 font-accent font-bold w-12 text-right">{g.ageGroup}</span>
                     <span className="text-white/30">|</span>
                     <span className="w-48 text-left">
-                      {g.sessions.map((s) => `${s.weekday}, ${s.date}`).join(' & ')}
+                      {g.sessions.map((s) => (s.weekday ? `${s.weekday}, ${s.date}` : s.date)).join(' & ')}
                     </span>
                   </div>
                 ))}
               </div>
               <p className="mt-4 text-white/50 text-sm text-center">
-                Both age groups: 4:00 to 6:00 PM.
+                8U tryouts run 4:00 to 6:00 PM. 9U date &amp; time to be announced.
               </p>
             </div>
 

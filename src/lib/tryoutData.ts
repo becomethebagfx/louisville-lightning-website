@@ -21,8 +21,8 @@ export interface TryoutGroup {
 export const TRYOUT_GROUPS: TryoutGroup[] = [
   {
     ageGroup: '9U',
-    sessions: [{ weekday: 'Sunday', date: 'July 20' }],
-    time: '4:00 to 6:00 PM',
+    sessions: [{ weekday: '', date: 'Date & time TBD' }],
+    time: 'TBD',
     ageRule: 'Players cannot turn 10 before May 1',
     bornCutoff: 'Born on or after May 1, 2016',
     contactName: 'Steven Garvin',
