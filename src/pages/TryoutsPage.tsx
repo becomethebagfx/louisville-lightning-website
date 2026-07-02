@@ -20,7 +20,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 function BoltIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className={className} fill="currentColor" viewBox="0 0 24 24">
       <path d="M13 0L0 14h9l-2 10 13-14h-9l2-10z" />
     </svg>
   );
@@ -91,7 +91,7 @@ export default function TryoutsPage() {
                 Register for Tryouts
               </Link>
               <p className="mt-3 text-white/50 text-sm">
-                Tryout Information Sheet &amp; Waiver · takes about 2 minutes
+                Tryout Information Sheet &amp; Waiver · takes a few minutes
               </p>
             </motion.div>
           )}
@@ -153,10 +153,10 @@ export default function TryoutsPage() {
                     </div>
                     <div className="mt-3 flex flex-col sm:flex-row gap-3">
                       <a
-                        href={`sms:${g.contactPhoneRaw}?body=Hi! I'm interested in Louisville Lightning ${g.ageGroup} tryouts.`}
+                        href={`sms:${g.contactPhoneRaw}?body=${encodeURIComponent(`Hi! I'm interested in Louisville Lightning ${g.ageGroup} tryouts.`)}`}
                         className="btn-lightning text-sm inline-flex items-center justify-center gap-2 flex-1"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
                         Text {g.contactName.split(' ')[0]}
@@ -165,7 +165,7 @@ export default function TryoutsPage() {
                         href={`tel:${g.contactPhoneRaw}`}
                         className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2 flex-1"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
                         {g.contactPhonePretty}
@@ -187,11 +187,12 @@ export default function TryoutsPage() {
           >
             <h2 className="text-stadium text-3xl md:text-4xl">
               <span className="text-white">TWO</span>{' '}
-              <span className="text-gradient-gold">TEAMS</span>
+              <span className="text-gradient-gold">8U TEAMS</span>
             </h2>
             <p className="mt-3 text-white/60 max-w-2xl mx-auto">
-              Louisville Lightning fields two teams. Tell us your preferred
-              team when you register, or mark either.
+              Our 8U program fields two teams: Lightning Yellow and Lightning
+              Blue. Tell us your preferred team when you register, or mark
+              either.
             </p>
           </motion.div>
           <div className="mt-8 max-w-3xl mx-auto grid sm:grid-cols-2 gap-6">
@@ -232,7 +233,7 @@ export default function TryoutsPage() {
           >
             <div className="card-electric rounded-lg p-7 md:p-8 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
               <div className="flex-shrink-0 w-16 h-16 bg-gold-500/10 rounded-lg flex items-center justify-center text-gold-500">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg aria-hidden="true" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>

@@ -168,6 +168,18 @@ body {
   box-shadow: 0 4px 15px rgba(245, 184, 0, 0.3);
 }
 
+/* clip-path clips outlines/shadows drawn outside the shape, so the
+   keyboard-focus ring must sit inside it (negative offset). */
+.btn-lightning:focus-visible {
+  outline: 2px solid var(--color-navy-900);
+  outline-offset: -5px;
+}
+
+.btn-lightning-outline:focus-visible {
+  outline: 2px solid var(--color-gold-300);
+  outline-offset: -6px;
+}
+
 .btn-lightning::before {
   content: '';
   position: absolute;

@@ -2,51 +2,59 @@
 
 ## Goal
 Louisville Lightning tryout Google Form (owned by loulightningclub@gmail.com,
-responses auto-flow to a Google Sheet) + form link on loulightning.com +
-website names head coaches (Danny Knapp = Lightning Blue, Taylor Davis =
-Lightning Yellow). Text Brandon when done. Full plan:
+responses auto-flow to a Google Sheet) + branded /register page embedding it
+on loulightning.com + head coaches named (Danny Knapp = Lightning Blue,
+Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
 ~/.claude/plans/louisville-lightning-tryout-form.md
 
 ## Constraints / Assumptions
-- Team Gmail: loulightningclub@gmail.com / LouLightning2026! (also in CLAUDE.md)
-- Taylor's Yellow-requirements file + private parent comms NEVER go on the
-  public site (standing boundary). Context/memory only.
+- Team Gmail: loulightningclub@gmail.com (creds in CLAUDE.md).
+- PRIVATE (never on site): Taylor's Yellow letter contents - cost/dues,
+  tournament date lists, practice weekdays, Beau Schoenbaechler (Blue
+  co-coach, unpublished pending Brandon OK).
 - Keep navy/gold theme, /walkup, /scout, schedule, roster intact.
-- Form fields verbatim from Taylor: player name, birthday, bats L/R, throws
-  L/R, primary position, secondary position, preferred team (Yellow-Davis /
-  Blue-Knapp / either), tryout date (July 19 / July 26 / both),
-  parent/guardian name(s), injury disclaimer + practices/tournaments
-  commitment disclaimer.
-- ASSUMPTION (UNCONFIRMED): Yellow + Blue are the two 8U teams; Knapp is the
-  second-team coach memory hinted at. Verify from forwarded email.
-- Gmail MCP token expired 2026-07-01; use browser automation for Gmail.
+- Yellow and Blue schedules DIFFER; form + site keep schedule copy generic.
 
 ## Key Decisions
-- Add parent phone + email as required form fields (signup sheet unusable
-  without contact info): falls under Taylor's "anything pertinent I forgot".
-- Form/Sheet created via browser automation as loulightningclub@gmail.com
-  (no Google Forms API setup needed; account owns everything).
+- Form built via Playwright UI automation as loulightningclub (no API/OAuth).
+- Email confirmation = Forms "Collect email (responder input)" + "Send copy:
+  Always" (replaced my manual parent-email question).
+- Registration embedded at /register inside branded page (Brandon asked for
+  a page, not a bare link); iframe 3800px + fallback new-tab link.
+- Intake close after July 26: cron reminder on do-droplet texts Brandon
+  Jul 27 09:00 ET to toggle "Accepting responses" off. Apps Script auto-close
+  offered as optional upgrade (needs his OAuth click).
 
 ## State
 ### Done
-- Creds saved to CLAUDE.md Infrastructure Reference (2026-07-01)
-- Plan written: ~/.claude/plans/louisville-lightning-tryout-form.md
-- Repo + memory context loaded (tryoutData.ts is single source of truth;
-  TryoutsPage renders from it)
+- Form live: https://docs.google.com/forms/d/e/1FAIpQLSdyTg5jwOh_UlYRFllwELdF7VL5TuOo_gEUiY3De5SEb-Sfxw/viewform
+  (14 fields incl. required injury "NOT responsible" waiver + commitment
+  checkbox; navy/gold banner theme; reCAPTCHA; email copies on).
+- Sheet linked + E2E verified (test row in, then deleted; orphan email
+  column removed): "Louisville Lightning Tryout Signups 2026".
+- Site: /register page, CTAs on /tryouts + home, nav/footer links, coach
+  roles on home. Commit b159914 pushed; LIVE verified cache-busted.
+- Screenshots in screenshots/AFTER/. Build + lint + em-dash sweep clean.
+- Memories saved: louisville-lightning-tryout-form,
+  louisville-lightning-yellow-private-info, google-forms-playwright-build-recipe.
+- Droplet cron ll-close-reminder installed (0 13 27 7 *, self-removing).
 ### Now
-- Phase 0: retrieve forwarded Taylor emails (Chrome -> mail.google.com)
+- Wiring audit round 1 (3 agents running: static / runtime-UX / copy-data).
 ### Next
-- Phase 1: create Google Form + linked Sheet as loulightningclub, verify with
-  test submission
-- Phase 2: website update (form CTA + coach names)
-- Phase 3: deploy + live verify; Phase 4: wiring audit + memories + SMS
+- Fix any audit findings, round 2 to zero, docs/AUDIT_2026-07-01.md,
+  commit with "wiring audit" reference, final SMS to Brandon.
 
 ## Open Questions
-- Does Blue/Yellow replace 8U/9U on /tryouts? (default: two 8U teams)
-- Where do "teams information sheet + schedule" live? (default: link existing
-  schedule from form description)
+- Publish Beau Schoenbaechler as Blue co-coach on the site? (awaiting Brandon)
+- Optional Apps Script auto-close of the form after Jul 26 (needs Brandon's
+  one-time OAuth Allow in the browser).
 
 ## Working Set
-- Files: src/lib/tryoutData.ts, src/pages/TryoutsPage.tsx, src/App.tsx
-- IDs: Render service louisville-lightning; repo becomethebagfx/louisville-lightning-website
-- Commands: npm run build; npm run lint; Twilio SMS snippet in CLAUDE.md
+- Files: src/lib/tryoutData.ts, src/pages/RegisterPage.tsx,
+  src/pages/TryoutsPage.tsx, src/components/Schedule.tsx, Navbar.tsx,
+  Footer.tsx, src/App.tsx
+- IDs: form edit 1Jbxp8HftSugaFLcJ86Phv5g1DPPtYeaoIsBFfAuQrSI; sheet
+  18QW4H78ySEXiARI8j0SQTrjGMzQRWImkeXxSRJUT65I; Render service
+  louisville-lightning; commit b159914
+- Commands: npm run build; npx vite preview --port 4517; Twilio SMS snippet
+  in CLAUDE.md

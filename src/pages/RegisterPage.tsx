@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import LightningBackground from '../components/LightningBackground';
 import Footer from '../components/Footer';
-import { TRYOUT_FORM_URL, LIGHTNING_TEAMS } from '../lib/tryoutData';
+import { TRYOUT_FORM_URL, TRYOUT_GROUPS, LIGHTNING_TEAMS } from '../lib/tryoutData';
+
+const nineU = TRYOUT_GROUPS.find((g) => g.ageGroup === '9U');
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -51,8 +53,27 @@ export default function RegisterPage() {
             transition={{ duration: 0.8, delay: 0.4, ease }}
             className="mt-3 text-gold-500 font-accent uppercase tracking-[0.2em] text-xs md:text-sm"
           >
-            {LIGHTNING_TEAMS.map((t) => `${t.name} · Coach ${t.headCoach.split(' ')[1]}`).join('  |  ')}
+            {LIGHTNING_TEAMS.map((t) => `${t.name} · Head Coach ${t.headCoach}`).join('  |  ')}
           </motion.p>
+
+          {nineU && (
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.5, ease }}
+              className="mt-4 text-white/50 text-sm max-w-xl mx-auto"
+            >
+              This form is for 8U tryouts (Lightning Yellow &amp; Blue). 9U
+              players: contact {nineU.contactName} at{' '}
+              <a
+                href={`tel:${nineU.contactPhoneRaw}`}
+                className="text-gold-500 hover:text-gold-400"
+              >
+                {nineU.contactPhonePretty}
+              </a>{' '}
+              while 9U dates are finalized.
+            </motion.p>
+          )}
         </section>
 
         <section className="relative bg-navy-900 pb-8 px-2 sm:px-4">
@@ -64,12 +85,14 @@ export default function RegisterPage() {
           >
             {TRYOUT_FORM_URL ? (
               <div className="card-electric rounded-lg p-1 sm:p-2 overflow-hidden">
+                {/* Measured natural form heights: 4221px @320w, 3966px @360w,
+                    3880px @375w, 3311px @740w, +~200px validation-error
+                    growth. Undersizing clips the Submit button into a nested
+                    scroll on touch. */}
                 <iframe
                   src={`${TRYOUT_FORM_URL}?embedded=true`}
                   title="Louisville Lightning Tryout Information Sheet and Waiver"
-                  className="w-full rounded-md bg-white"
-                  style={{ height: '3800px', border: 0 }}
-                  loading="lazy"
+                  className="w-full rounded-md bg-white border-0 h-[4500px] sm:h-[4100px] md:h-[3700px]"
                 >
                   Loading form...
                 </iframe>
