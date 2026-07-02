@@ -57,6 +57,12 @@ export default function Footer() {
               Tryouts
             </Link>
             <Link
+              to="/register"
+              className="text-gold-400 hover:text-gold-300 transition-colors font-accent uppercase tracking-wider text-sm"
+            >
+              Register
+            </Link>
+            <Link
               to="/walkup"
               className="text-white/50 hover:text-gold-500 transition-colors font-accent uppercase tracking-wider text-sm flex items-center gap-1.5"
             >

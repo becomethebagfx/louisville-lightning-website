@@ -46,6 +46,25 @@ export const TRYOUT_GROUPS: TryoutGroup[] = [
   },
 ];
 
+// Google Form: "Louisville Lightning Tryout Information Sheet and Waiver".
+// Responses flow to the "Louisville Lightning Tryout Signups 2026" Google
+// Sheet on loulightningclub@gmail.com. Embedded on /register; set to '' to
+// hide every registration CTA and the page content.
+export const TRYOUT_FORM_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLSdyTg5jwOh_UlYRFllwELdF7VL5TuOo_gEUiY3De5SEb-Sfxw/viewform';
+
+export interface LightningTeam {
+  name: string; // 'Lightning Yellow' | 'Lightning Blue'
+  colorWord: string; // 'Yellow' | 'Blue'
+  headCoach: string;
+}
+
+// 8U fields two teams; players indicate a preferred team when registering.
+export const LIGHTNING_TEAMS: LightningTeam[] = [
+  { name: 'Lightning Yellow', colorWord: 'Yellow', headCoach: 'Taylor Davis' },
+  { name: 'Lightning Blue', colorWord: 'Blue', headCoach: 'Danny Knapp' },
+];
+
 export const TRYOUT_LOCATION = {
   name: 'Watkins Church',
   address: '9800 Westport Road',

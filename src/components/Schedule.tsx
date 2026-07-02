@@ -2,15 +2,16 @@ import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { TRYOUT_GROUPS, TRYOUT_LOCATION } from '../lib/tryoutData';
+import { TRYOUT_GROUPS, TRYOUT_LOCATION, TRYOUT_FORM_URL } from '../lib/tryoutData';
 
-const coaches = [
-  'Taylor Davis',
-  'Aaron Quesenberry',
-  'Aaron Schecter',
-  'Shawn Kittle',
-  'Brandon Hayman',
-  'Josh Deacon',
+const coaches: { name: string; role?: string }[] = [
+  { name: 'Taylor Davis', role: 'Head Coach · Lightning Yellow' },
+  { name: 'Danny Knapp', role: 'Head Coach · Lightning Blue' },
+  { name: 'Aaron Quesenberry' },
+  { name: 'Aaron Schecter' },
+  { name: 'Shawn Kittle' },
+  { name: 'Brandon Hayman' },
+  { name: 'Josh Deacon' },
 ];
 
 export default function Schedule() {
@@ -91,8 +92,22 @@ export default function Schedule() {
               </p>
             </div>
 
-            <div className="text-center">
-              <Link to="/tryouts" className="btn-lightning text-sm inline-flex items-center gap-2">
+            <div className="text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+              {TRYOUT_FORM_URL && (
+                <Link
+                  to="/register"
+                  className="btn-lightning text-sm inline-flex items-center gap-2"
+                >
+                  Register for Tryouts
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 0L0 14h9l-2 10 13-14h-9l2-10z" />
+                  </svg>
+                </Link>
+              )}
+              <Link
+                to="/tryouts"
+                className={`${TRYOUT_FORM_URL ? 'btn-lightning-outline' : 'btn-lightning'} text-sm inline-flex items-center gap-2`}
+              >
                 Full Tryout Info
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -118,11 +133,18 @@ export default function Schedule() {
               </h3>
               <div className="space-y-2">
                 {coaches.map((coach, i) => (
-                  <div key={i} className="text-white/80 flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4 text-gold-500/60" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M13 0L0 14h9l-2 10 13-14h-9l2-10z" />
-                    </svg>
-                    {coach}
+                  <div key={i} className="text-white/80 flex flex-col items-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4 text-gold-500/60" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M13 0L0 14h9l-2 10 13-14h-9l2-10z" />
+                      </svg>
+                      {coach.name}
+                    </div>
+                    {coach.role && (
+                      <div className="text-gold-500/70 font-accent uppercase tracking-wider text-xs">
+                        {coach.role}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

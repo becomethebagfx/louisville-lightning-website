@@ -1,10 +1,13 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import LightningBackground from '../components/LightningBackground';
 import Footer from '../components/Footer';
 import {
   TRYOUT_GROUPS,
   TRYOUT_LOCATION,
   TRYOUT_LOOKING_FOR,
+  TRYOUT_FORM_URL,
+  LIGHTNING_TEAMS,
 } from '../lib/tryoutData';
 
 const fadeUp = {
@@ -72,6 +75,26 @@ export default function TryoutsPage() {
           >
             {TRYOUT_LOOKING_FOR}
           </motion.p>
+
+          {TRYOUT_FORM_URL && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.55, ease }}
+              className="mt-8"
+            >
+              <Link
+                to="/register"
+                className="btn-lightning text-base inline-flex items-center gap-2"
+              >
+                <BoltIcon className="w-4 h-4" />
+                Register for Tryouts
+              </Link>
+              <p className="mt-3 text-white/50 text-sm">
+                Tryout Information Sheet &amp; Waiver · takes about 2 minutes
+              </p>
+            </motion.div>
+          )}
         </section>
 
         {/* Age-group tryout cards */}
@@ -155,6 +178,51 @@ export default function TryoutsPage() {
           </div>
         </section>
 
+        {/* Two teams */}
+        <section className="relative bg-navy-900 pt-8 pb-4 px-4">
+          <motion.div
+            {...fadeUp}
+            transition={{ duration: 0.8, ease }}
+            className="max-w-5xl mx-auto text-center"
+          >
+            <h2 className="text-stadium text-3xl md:text-4xl">
+              <span className="text-white">TWO</span>{' '}
+              <span className="text-gradient-gold">TEAMS</span>
+            </h2>
+            <p className="mt-3 text-white/60 max-w-2xl mx-auto">
+              Louisville Lightning fields two teams. Tell us your preferred
+              team when you register, or mark either.
+            </p>
+          </motion.div>
+          <div className="mt-8 max-w-3xl mx-auto grid sm:grid-cols-2 gap-6">
+            {LIGHTNING_TEAMS.map((t, i) => (
+              <motion.div
+                key={t.name}
+                {...fadeUp}
+                transition={{ duration: 0.8, delay: 0.1 * (i + 1), ease }}
+              >
+                <div className="card-electric rounded-lg p-6 text-center h-full">
+                  <div
+                    className={`text-stadium text-2xl md:text-3xl leading-none ${
+                      t.colorWord === 'Yellow' ? 'text-gold-500 glow-gold-subtle' : 'text-sky-400'
+                    }`}
+                  >
+                    {t.name.toUpperCase()}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <div className="text-gold-500/80 font-accent uppercase tracking-wider text-xs">
+                      Head Coach
+                    </div>
+                    <div className="mt-1 text-white text-lg font-accent uppercase tracking-wide">
+                      {t.headCoach}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
         {/* Location */}
         <section className="relative bg-navy-900 py-12 px-4">
           <motion.div
@@ -212,6 +280,15 @@ export default function TryoutsPage() {
               <span className="text-white">Focused on</span>{' '}
               <span className="text-gradient-gold">excellence.</span>
             </p>
+            {TRYOUT_FORM_URL && (
+              <Link
+                to="/register"
+                className="btn-lightning text-sm inline-flex items-center gap-2 mt-8"
+              >
+                <BoltIcon className="w-4 h-4" />
+                Register for Tryouts
+              </Link>
+            )}
           </motion.div>
         </section>
 

@@ -6,7 +6,8 @@ export default function Navbar() {
   const isWalkup = location.pathname === '/walkup';
   const isScout = location.pathname === '/scout';
   const isTryouts = location.pathname === '/tryouts';
-  const isHome = !isWalkup && !isScout && !isTryouts;
+  const isRegister = location.pathname === '/register';
+  const isHome = !isWalkup && !isScout && !isTryouts && !isRegister;
 
   return (
     <motion.nav
@@ -51,6 +52,16 @@ export default function Navbar() {
               }`}
             >
               Tryouts
+            </Link>
+            <Link
+              to="/register"
+              className={`px-3 py-2 rounded-lg font-accent uppercase tracking-wider text-xs sm:text-sm transition-all ${
+                isRegister
+                  ? 'text-gold-500 bg-gold-500/10'
+                  : 'text-gold-400 hover:text-gold-300 hover:bg-gold-500/10'
+              }`}
+            >
+              Register
             </Link>
             <Link
               to="/walkup"

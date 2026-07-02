@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import TryoutsPage from './pages/TryoutsPage';
+import RegisterPage from './pages/RegisterPage';
 import WalkUpPage from './pages/WalkUpPage';
 import ScoutPage from './pages/ScoutPage';
 
@@ -38,6 +39,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/tryouts" element={<TryoutsPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/walkup" element={<WalkUpPage />} />
           <Route path="/scout" element={<ScoutPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
