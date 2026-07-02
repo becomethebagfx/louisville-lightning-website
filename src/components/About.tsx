@@ -111,7 +111,7 @@ export default function About() {
           className="mt-16 grid grid-cols-3 gap-8 text-center"
         >
           {[
-            { value: '8U · 9U', label: 'Age Groups' },
+            { value: '8U', label: 'Two Teams' },
             { value: 'Travel', label: 'Tournament Ball' },
             { value: '2026', label: 'Season' },
           ].map((stat) => (

@@ -30,15 +30,17 @@ export default function Contact() {
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mt-8 text-white/60 text-lg md:text-xl max-w-xl mx-auto"
         >
-          Questions about tryouts, the team, or anything Louisville Lightning? Reach out to the coach for your age group.
+          Questions about tryouts, the team, or anything Louisville Lightning? Reach out anytime.
         </motion.p>
 
-        {/* Contact Cards - one per age group */}
+        {/* Contact Cards */}
         <motion.div
           initial={{ y: 30, opacity: 0 }}
           animate={isInView ? { y: 0, opacity: 1 } : {}}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-10 grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto"
+          className={`mt-10 grid gap-6 mx-auto ${
+            TRYOUT_GROUPS.length > 1 ? 'sm:grid-cols-2 max-w-3xl' : 'max-w-md'
+          }`}
         >
           {TRYOUT_GROUPS.map((g) => (
             <div key={g.ageGroup} className="card-electric rounded-lg p-6">

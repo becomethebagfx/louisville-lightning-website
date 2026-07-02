@@ -41,7 +41,7 @@ export default function Schedule() {
           className="text-center mb-16"
         >
           <span className="text-gold-500 font-accent uppercase tracking-[0.2em] text-sm">
-            Now Recruiting · 8U &amp; 9U
+            Now Recruiting · 8U
           </span>
           <h2 className="text-stadium text-4xl md:text-6xl mt-4">
             <span className="text-white">THE</span>{' '}
@@ -79,7 +79,7 @@ export default function Schedule() {
                 ))}
               </div>
               <p className="mt-4 text-white/50 text-sm text-center">
-                8U tryouts run 4:00 to 6:00 PM. 9U date &amp; time to be announced.
+                Tryouts run 4:00 to 6:00 PM.
               </p>
             </div>
 

@@ -24,7 +24,7 @@ export default function Footer() {
                 LOUISVILLE <span className="text-gold-500">LIGHTNING</span>
               </div>
               <div className="text-xs text-white/60 font-accent uppercase tracking-wider">
-                8U &amp; 9U Travel Baseball
+                8U Travel Baseball
               </div>
             </div>
           </motion.div>

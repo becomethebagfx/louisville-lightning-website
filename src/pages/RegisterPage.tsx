@@ -1,9 +1,7 @@
 import { motion } from 'framer-motion';
 import LightningBackground from '../components/LightningBackground';
 import Footer from '../components/Footer';
-import { TRYOUT_FORM_URL, TRYOUT_GROUPS, LIGHTNING_TEAMS } from '../lib/tryoutData';
-
-const nineU = TRYOUT_GROUPS.find((g) => g.ageGroup === '9U');
+import { TRYOUT_FORM_URL, LIGHTNING_TEAMS } from '../lib/tryoutData';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -56,24 +54,6 @@ export default function RegisterPage() {
             {LIGHTNING_TEAMS.map((t) => `${t.name} · Head Coach ${t.headCoach}`).join('  |  ')}
           </motion.p>
 
-          {nineU && (
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.5, ease }}
-              className="mt-4 text-white/50 text-sm max-w-xl mx-auto"
-            >
-              This form is for 8U tryouts (Lightning Yellow &amp; Blue). 9U
-              players: contact {nineU.contactName} at{' '}
-              <a
-                href={`tel:${nineU.contactPhoneRaw}`}
-                className="text-gold-500 hover:text-gold-400"
-              >
-                {nineU.contactPhonePretty}
-              </a>{' '}
-              while 9U dates are finalized.
-            </motion.p>
-          )}
         </section>
 
         <section className="relative bg-navy-900 pb-8 px-2 sm:px-4">

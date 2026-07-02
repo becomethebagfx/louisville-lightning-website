@@ -28,7 +28,7 @@ export default function Hero() {
           className="mt-6"
         >
           <span className="inline-block px-6 py-2 border-2 border-gold-500 text-gold-500 text-xl md:text-2xl tracking-[0.3em] font-accent uppercase">
-            8U &amp; 9U Travel Baseball
+            8U Travel Baseball
           </span>
         </motion.div>
 
@@ -48,7 +48,7 @@ export default function Hero() {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold-500" />
             </span>
             <span className="text-gold-400 group-hover:text-gold-300 font-accent uppercase tracking-[0.15em] text-sm md:text-base">
-              Now Recruiting · 8U &amp; 9U
+              Now Recruiting · 8U
             </span>
             <svg aria-hidden="true" className="w-4 h-4 text-gold-400 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />

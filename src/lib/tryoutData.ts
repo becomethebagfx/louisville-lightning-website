@@ -5,7 +5,7 @@
 // ============================================================
 
 export interface TryoutGroup {
-  ageGroup: string; // '8U' | '9U'
+  ageGroup: string; // '8U'
   sessions: { weekday: string; date: string }[];
   time: string;
   // How the coaches phrase the cutoff, verbatim:
@@ -19,17 +19,6 @@ export interface TryoutGroup {
 }
 
 export const TRYOUT_GROUPS: TryoutGroup[] = [
-  {
-    ageGroup: '9U',
-    sessions: [{ weekday: '', date: 'Date & time TBD' }],
-    time: 'TBD',
-    ageRule: 'Players cannot turn 10 before May 1',
-    bornCutoff: 'Born on or after May 1, 2016',
-    contactName: 'Steven Garvin',
-    contactRole: '9U Contact',
-    contactPhonePretty: '502.821.1880',
-    contactPhoneRaw: '5028211880',
-  },
   {
     ageGroup: '8U',
     sessions: [
