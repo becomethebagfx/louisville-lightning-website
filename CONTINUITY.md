@@ -38,11 +38,17 @@ Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
 - Memories saved: louisville-lightning-tryout-form,
   louisville-lightning-yellow-private-info, google-forms-playwright-build-recipe.
 - Droplet cron ll-close-reminder installed (0 13 27 7 *, self-removing).
+### Done (audit)
+- Wiring audit COMPLETE: round 1 (3 agents) -> 3 Tier 2 + 11 Tier 3, all
+  fixed; round 2 -> 1 Tier 3 (Hero "Now Open" vs 9U TBD), fixed; round 3
+  scoped -> zero. Artifact docs/AUDIT_2026-07-01.md. Commit afb07f1
+  deployed + verified live (9U notice, coach line, responsive iframe).
+- Final SMS sent to Brandon.
 ### Now
-- Wiring audit round 1 (3 agents running: static / runtime-UX / copy-data).
+- Phase closed. Awaiting Brandon on open questions.
 ### Next
-- Fix any audit findings, round 2 to zero, docs/AUDIT_2026-07-01.md,
-  commit with "wiring audit" reference, final SMS to Brandon.
+- If approved: publish Beau Schoenbaechler (Blue co-coach); Apps Script
+  auto-close after Jul 26 (needs his OAuth click); confirm age cutoffs.
 
 ## Open Questions
 - Publish Beau Schoenbaechler as Blue co-coach on the site? (awaiting Brandon)
