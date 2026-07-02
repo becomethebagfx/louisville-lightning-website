@@ -44,6 +44,14 @@ Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
   scoped -> zero. Artifact docs/AUDIT_2026-07-01.md. Commit afb07f1
   deployed + verified live (9U notice, coach line, responsive iframe).
 - Final SMS sent to Brandon.
+### Done (2026-07-02)
+- 9U program + Steven Garvin REMOVED site-wide per Brandon (club is 8U
+  only): tryoutData 9U group, Hero badge/banner, Schedule label/note,
+  Footer tagline, About stat, RegisterPage 9U notice; single-card layouts
+  centered. grep 9U/Garvin in src/index.html/manifest = zero. Deployed +
+  live bundle verified. Verification agent round run.
+- Taylor handoff text drafted to ~/Desktop/"Taylor - Tryout Form Text.docx"
+  (contains creds; kept out of repo).
 ### Now
 - Phase closed. Awaiting Brandon on open questions.
 ### Next
@@ -52,6 +60,7 @@ Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
 
 ## Open Questions
 - Publish Beau Schoenbaechler as Blue co-coach on the site? (awaiting Brandon)
+- Word doc for Taylor references no 9U; Google Form description already 8U-only (accurate).
 - Optional Apps Script auto-close of the form after Jul 26 (needs Brandon's
   one-time OAuth Allow in the browser).
 
