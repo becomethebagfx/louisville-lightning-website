@@ -4,7 +4,12 @@ import type { Player } from '../lib/types';
 import { useRoster } from '../lib/useRoster';
 import { useAudioPlayer } from '../lib/useAudioPlayer';
 import { useCoachMode } from '../lib/useCoachMode';
-import { deleteAudio, preloadAllAudio } from '../lib/db';
+import {
+  deleteAudio,
+  deleteAnnouncement,
+  preloadAllAudio,
+  preloadAllAnnouncements,
+} from '../lib/db';
 import SpeakerSetup from '../components/walkup/SpeakerSetup';
 import PlayerCard from '../components/walkup/PlayerCard';
 import EditPlayerModal from '../components/walkup/EditPlayerModal';
@@ -16,6 +21,7 @@ function ReorderablePlayer({
   player,
   isPlaying,
   isCoach,
+  hasIntro,
   onPlay,
   onStop,
   onEdit,
@@ -23,6 +29,7 @@ function ReorderablePlayer({
   player: Player;
   isPlaying: boolean;
   isCoach: boolean;
+  hasIntro: boolean;
   onPlay: () => void;
   onStop: () => void;
   onEdit: () => void;
@@ -40,6 +47,7 @@ function ReorderablePlayer({
         player={player}
         isPlaying={isPlaying}
         isCoach={isCoach}
+        hasIntro={hasIntro}
         onPlay={onPlay}
         onStop={onStop}
         onEdit={onEdit}
@@ -51,13 +59,15 @@ function ReorderablePlayer({
 
 export default function WalkUpPage() {
   const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers, saveOrder } = useRoster();
-  const { playingId, play, stop } = useAudioPlayer();
+  const { playingId, isIntroSequence, play, stop, playIntros } = useAudioPlayer();
   const { isCoach, unlock, lock } = useCoachMode();
   const [editingPlayer, setEditingPlayer] = useState<Player | null | 'new'>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [orderDirty, setOrderDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [introIds, setIntroIds] = useState<Set<string>>(new Set());
+  const [introRefresh, setIntroRefresh] = useState(0);
 
   const playingPlayer = playingId ? players.find(p => p.id === playingId) : null;
 
@@ -67,6 +77,18 @@ export default function WalkUpPage() {
     const ids = players.filter(p => p.songName).map(p => p.id);
     if (ids.length > 0) preloadAllAudio(ids);
   }, [players]);
+
+  // Preload player intros the same way; track which players have one so
+  // cards can badge it and the pregame button knows the queue.
+  useEffect(() => {
+    const ids = players.map(p => p.id);
+    if (ids.length === 0) return;
+    let cancelled = false;
+    preloadAllAnnouncements(ids).then(found => {
+      if (!cancelled) setIntroIds(new Set(found));
+    });
+    return () => { cancelled = true; };
+  }, [players, introRefresh]);
 
   function requireCoach(action: () => void) {
     if (isCoach) {
@@ -104,7 +126,14 @@ export default function WalkUpPage() {
   function handleDelete(id: string) {
     if (playingId === id) stop();
     deleteAudio(id);
+    deleteAnnouncement(id);
     removePlayer(id);
+  }
+
+  function handleModalClose() {
+    setEditingPlayer(null);
+    // Re-scan intros: the modal may have added/removed one.
+    setIntroRefresh(n => n + 1);
   }
 
   return (
@@ -181,6 +210,37 @@ export default function WalkUpPage() {
         {/* Speaker setup */}
         <SpeakerSetup />
 
+        {/* Pregame intros: announce the whole lineup back to back */}
+        {introIds.size > 0 && players.length > 0 && (
+          <motion.div
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mb-4"
+          >
+            <button
+              onClick={() =>
+                isIntroSequence ? stop() : playIntros(players.map(p => p.id))
+              }
+              className={`w-full py-3 rounded-lg font-accent uppercase tracking-widest text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-all ${
+                isIntroSequence
+                  ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'
+                  : 'bg-navy-800 border border-gold-500/40 text-gold-500 hover:bg-gold-500/10'
+              }`}
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                {isIntroSequence ? (
+                  <rect x="6" y="6" width="12" height="12" rx="1" />
+                ) : (
+                  <path d="M3 10v4a1 1 0 001 1h3l5 4V5L7 9H4a1 1 0 00-1 1zm13.5 2a4.5 4.5 0 00-2.5-4.03v8.05A4.5 4.5 0 0016.5 12zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z" />
+                )}
+              </svg>
+              {isIntroSequence
+                ? 'Stop Intros'
+                : `Pregame Intros (${introIds.size})`}
+            </button>
+          </motion.div>
+        )}
+
         {/* Save Lineup button - top (shown when order changed) */}
         {isCoach && orderDirty && (
           <motion.div
@@ -239,6 +299,7 @@ export default function WalkUpPage() {
                 player={player}
                 isPlaying={playingId === player.id}
                 isCoach={isCoach}
+                hasIntro={introIds.has(player.id)}
                 onPlay={() => play(player.id, player.startTime, player.clipDuration)}
                 onStop={stop}
                 onEdit={() => requireCoach(() => setEditingPlayer(player))}
@@ -312,7 +373,7 @@ export default function WalkUpPage() {
             else updatePlayer(p);
           }}
           onDelete={editingPlayer !== 'new' ? () => handleDelete(editingPlayer.id) : undefined}
-          onClose={() => setEditingPlayer(null)}
+          onClose={handleModalClose}
         />
       )}
     </div>

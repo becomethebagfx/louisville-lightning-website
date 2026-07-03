@@ -1,7 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player } from '../../lib/types';
-import { saveAudio, getAudio, deleteAudio } from '../../lib/db';
+import {
+  saveAudio,
+  getAudio,
+  deleteAudio,
+  getAnnouncement,
+  saveAnnouncement,
+  deleteAnnouncement,
+} from '../../lib/db';
+import { audioBufferToWavBlob } from '../../lib/wav';
 
 interface Props {
   player: Player | null;
@@ -56,6 +64,43 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
 
   const [audioError, setAudioError] = useState('');
 
+  // Player intro (announcement) state
+  const [introStatus, setIntroStatus] = useState<'none' | 'loaded' | 'pending'>('none');
+  const [introLabel, setIntroLabel] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [introError, setIntroError] = useState('');
+  const [isIntroPreviewing, setIsIntroPreviewing] = useState(false);
+  const pendingIntroBlob = useRef<Blob | null>(null);
+  const introRemovedRef = useRef(false);
+  const introBlobRef = useRef<Blob | null>(null);
+  const introFileRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordChunksRef = useRef<BlobPart[]>([]);
+  const introAudioRef = useRef<HTMLAudioElement | null>(null);
+  const introUrlRef = useRef<string | null>(null);
+
+  const stopIntroPreview = useCallback(() => {
+    if (introAudioRef.current) {
+      introAudioRef.current.pause();
+      introAudioRef.current.currentTime = 0;
+    }
+    if (introUrlRef.current) {
+      URL.revokeObjectURL(introUrlRef.current);
+      introUrlRef.current = null;
+    }
+    setIsIntroPreviewing(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopIntroPreview();
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        recorderRef.current.stop();
+        recorderRef.current.stream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [stopIntroPreview]);
+
   async function loadAudioBlob(blob: Blob) {
     audioBlobRef.current = blob;
     setAudioError('');
@@ -98,8 +143,97 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
           loadAudioBlob(blob);
         }
       });
+      getAnnouncement(player.id).then(blob => {
+        if (blob) {
+          introBlobRef.current = blob;
+          setIntroStatus('loaded');
+          setIntroLabel('Current intro loaded');
+        }
+      });
     }
   }, [player]);
+
+  async function startRecording() {
+    setIntroError('');
+    stopIntroPreview();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      recordChunksRef.current = [];
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) recordChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const raw = new Blob(recordChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        try {
+          // Re-encode to WAV so Chrome-recorded webm plays on iPhones too.
+          const ctx = new AudioContext();
+          const buf = await ctx.decodeAudioData(await raw.arrayBuffer());
+          ctx.close();
+          const wav = audioBufferToWavBlob(buf);
+          pendingIntroBlob.current = wav;
+          introRemovedRef.current = false;
+          setIntroStatus('pending');
+          setIntroLabel(`Recorded intro (${buf.duration.toFixed(1)}s)`);
+        } catch {
+          setIntroError('Could not process the recording. Try again or upload a file.');
+        }
+        setIsRecording(false);
+      };
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      setIntroError('Microphone unavailable. Check permissions, or upload a file instead.');
+    }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      recorderRef.current.stop();
+    }
+  }
+
+  function handleIntroFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIntroError('');
+    stopIntroPreview();
+    pendingIntroBlob.current = file;
+    introRemovedRef.current = false;
+    setIntroStatus('pending');
+    setIntroLabel(file.name);
+  }
+
+  async function handleIntroPreview() {
+    if (isIntroPreviewing) {
+      stopIntroPreview();
+      return;
+    }
+    const blob = pendingIntroBlob.current || introBlobRef.current;
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    introUrlRef.current = url;
+    const audio = new Audio(url);
+    introAudioRef.current = audio;
+    audio.onended = () => stopIntroPreview();
+    try {
+      setIsIntroPreviewing(true);
+      await audio.play();
+    } catch {
+      stopIntroPreview();
+    }
+  }
+
+  function handleRemoveIntro() {
+    stopIntroPreview();
+    pendingIntroBlob.current = null;
+    introBlobRef.current = null;
+    introRemovedRef.current = true;
+    setIntroStatus('none');
+    setIntroLabel('');
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -160,7 +294,14 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
       saveAudio(id, pendingBlob.current);
     }
 
+    if (pendingIntroBlob.current) {
+      saveAnnouncement(id, pendingIntroBlob.current);
+    } else if (introRemovedRef.current && player) {
+      deleteAnnouncement(player.id);
+    }
+
     stopPreview();
+    stopIntroPreview();
     onSave(saved);
     onClose();
   }
@@ -389,6 +530,79 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
               </button>
             </div>
           )}
+
+          {/* Player intro (announcement) */}
+          <div>
+            <label className="block text-xs text-white/50 font-accent uppercase tracking-wider mb-1.5">
+              Player Intro
+            </label>
+            <p className="text-xs text-white/30 mb-2">
+              PA-announcer intro that plays before the walk-up song. Record one
+              or upload an audio file.
+            </p>
+            <input
+              ref={introFileRef}
+              type="file"
+              accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.opus,.flac"
+              onChange={handleIntroFile}
+              className="absolute w-0 h-0 opacity-0 overflow-hidden"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`flex-1 px-3 py-3 rounded-lg border text-sm font-accent uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
+                  isRecording
+                    ? 'bg-red-500 border-red-500 text-white'
+                    : 'bg-navy-700 border-white/10 text-white/60 hover:border-gold-500/30'
+                }`}
+              >
+                <svg aria-hidden="true" className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  {isRecording ? (
+                    <rect x="6" y="6" width="12" height="12" rx="1" />
+                  ) : (
+                    <path d="M12 14a3 3 0 003-3V5a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V21h2v-3.08A7 7 0 0019 11h-2z" />
+                  )}
+                </svg>
+                {isRecording ? 'Stop' : 'Record'}
+              </button>
+              <button
+                type="button"
+                onClick={() => introFileRef.current?.click()}
+                className="flex-1 px-3 py-3 rounded-lg bg-navy-700 border border-white/10 text-white/60 text-sm font-accent uppercase tracking-wider hover:border-gold-500/30 transition-colors"
+              >
+                Upload
+              </button>
+              {introStatus !== 'none' && (
+                <button
+                  type="button"
+                  onClick={handleRemoveIntro}
+                  className="px-3 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors text-sm"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {introStatus !== 'none' && (
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleIntroPreview}
+                  className={`px-3 py-2 rounded-lg text-xs font-accent uppercase tracking-wider transition-colors ${
+                    isIntroPreviewing
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gold-500/10 border border-gold-500/30 text-gold-500 hover:bg-gold-500/20'
+                  }`}
+                >
+                  {isIntroPreviewing ? 'Stop' : 'Play Intro'}
+                </button>
+                <span className="text-xs text-white/40 truncate">{introLabel}</span>
+              </div>
+            )}
+            {introError && (
+              <p className="mt-1.5 text-xs text-red-400">{introError}</p>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">

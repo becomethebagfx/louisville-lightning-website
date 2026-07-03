@@ -125,3 +125,79 @@ export async function deleteAudio(playerId: string): Promise<void> {
       .remove([`${playerId}.audio`])
   }
 }
+
+// ---- Player intro announcements ----
+// Same storage machinery as songs: memCache + IndexedDB keyed with an
+// 'ann:' prefix, Supabase object `${playerId}.announce` in the same bucket.
+
+const annKey = (playerId: string) => `ann:${playerId}`
+
+export async function preloadAllAnnouncements(playerIds: string[]): Promise<string[]> {
+  const found: string[] = []
+  await Promise.all(playerIds.map(async (id) => {
+    const blob = await getAnnouncement(id)
+    if (blob) found.push(id)
+  }))
+  return found
+}
+
+export function getAnnouncementSync(playerId: string): Blob | undefined {
+  return memCache.get(annKey(playerId))
+}
+
+export function saveAnnouncement(playerId: string, blob: Blob): void {
+  memCache.set(annKey(playerId), blob)
+
+  cacheAudio(annKey(playerId), blob).catch(err =>
+    console.error('IndexedDB intro cache failed:', err)
+  )
+
+  if (supabase) {
+    supabase.storage
+      .from(BUCKET)
+      .upload(`${playerId}.announce`, blob, { upsert: true })
+      .then(({ error }) => {
+        if (error) console.error('Supabase intro upload failed:', error)
+      })
+  }
+}
+
+export async function getAnnouncement(playerId: string): Promise<Blob | undefined> {
+  const mem = memCache.get(annKey(playerId))
+  if (mem) return mem
+
+  try {
+    const cached = await getCachedAudio(annKey(playerId))
+    if (cached) {
+      memCache.set(annKey(playerId), cached)
+      return cached
+    }
+  } catch {
+    // IndexedDB unavailable - fall through to Supabase
+  }
+
+  if (supabase) {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .download(`${playerId}.announce`)
+
+    if (!error && data) {
+      memCache.set(annKey(playerId), data)
+      cacheAudio(annKey(playerId), data).catch(() => {})
+      return data
+    }
+  }
+
+  return undefined
+}
+
+export async function deleteAnnouncement(playerId: string): Promise<void> {
+  memCache.delete(annKey(playerId))
+  deleteCachedAudio(annKey(playerId)).catch(() => {})
+
+  if (supabase) {
+    await supabase.storage
+      .from(BUCKET)
+      .remove([`${playerId}.announce`])
+  }
+}

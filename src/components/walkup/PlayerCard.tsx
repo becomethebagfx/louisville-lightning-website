@@ -4,14 +4,15 @@ interface Props {
   player: Player;
   isPlaying: boolean;
   isCoach: boolean;
+  hasIntro?: boolean;
   onPlay: () => void;
   onStop: () => void;
   onEdit: () => void;
   onDragStart?: (e: React.PointerEvent) => void;
 }
 
-export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop, onEdit, onDragStart }: Props) {
-  const hasAudio = !!player.songName;
+export default function PlayerCard({ player, isPlaying, isCoach, hasIntro, onPlay, onStop, onEdit, onDragStart }: Props) {
+  const hasAudio = !!player.songName || hasIntro;
 
   return (
     <div
@@ -53,8 +54,20 @@ export default function PlayerCard({ player, isPlaying, isCoach, onPlay, onStop,
           <div className="text-lg font-bold truncate font-accent uppercase tracking-wide">
             {player.name}
           </div>
-          <div className="text-sm text-white/50 truncate">
-            {player.songName || 'No song set'}
+          <div className="text-sm text-white/50 truncate flex items-center gap-1.5">
+            {hasIntro && (
+              <span
+                title="Has PA intro"
+                className="inline-flex items-center gap-0.5 text-gold-500/80 flex-shrink-0"
+              >
+                <svg aria-hidden="true" className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 10v4a1 1 0 001 1h3l5 4V5L7 9H4a1 1 0 00-1 1zm13.5 2a4.5 4.5 0 00-2.5-4.03v8.05A4.5 4.5 0 0016.5 12zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z" />
+                </svg>
+              </span>
+            )}
+            <span className="truncate">
+              {player.songName || (hasIntro ? 'Intro only' : 'No song set')}
+            </span>
           </div>
         </div>
 
