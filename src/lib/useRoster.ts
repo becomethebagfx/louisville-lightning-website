@@ -103,14 +103,35 @@ export function useRoster(team: TeamKey) {
         m = { yellow: { playerIds: all.map(p => p.id) }, blue: { playerIds: [] } }
         saveTeamManifest(m)
       } else {
-        // Adopt unassigned rows (added before this feature or by a stale
-        // client) into Yellow so no player can vanish from both teams.
         const known = new Set([...m.yellow.playerIds, ...m.blue.playerIds])
+        let changed = false
+
+        // A just-added player's manifest upload may still be in flight when
+        // the realtime refetch downloads teams.json: let this device's local
+        // placement win before the orphan sweep, or a Blue add would be
+        // misfiled to Yellow. Removed rows fail the `all` check, so a stale
+        // local manifest cannot resurrect a deleted player.
+        const local = manifestRef.current
+        if (local) {
+          for (const t of ['yellow', 'blue'] as TeamKey[]) {
+            for (const id of local[t].playerIds) {
+              if (!known.has(id) && all.some(p => p.id === id)) {
+                m = { ...m, [t]: { playerIds: [...m[t].playerIds, id] } }
+                known.add(id)
+                changed = true
+              }
+            }
+          }
+        }
+
+        // Adopt truly-unassigned rows (added before this feature or by a
+        // stale client) into Yellow so no player can vanish from both teams.
         const orphans = all.filter(p => !known.has(p.id)).map(p => p.id)
         if (orphans.length > 0) {
           m = { ...m, yellow: { playerIds: [...m.yellow.playerIds, ...orphans] } }
-          saveTeamManifest(m)
+          changed = true
         }
+        if (changed) saveTeamManifest(m)
       }
       manifestRef.current = m
 
@@ -123,7 +144,7 @@ export function useRoster(team: TeamKey) {
     refetch()
 
     const channel = sb
-      .channel('roster-sync')
+      .channel(`roster-sync-${team}-${Math.random().toString(36).slice(2, 8)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => {
         refetch()
       })
@@ -135,8 +156,14 @@ export function useRoster(team: TeamKey) {
     }
   }, [team])
 
-  // Persist locally whenever players change
+  // Persist locally whenever players change. Skip the render where the team
+  // just changed: `players` still holds the previous team's roster there.
+  const prevTeamRef = useRef(team)
   useEffect(() => {
+    if (prevTeamRef.current !== team) {
+      prevTeamRef.current = team
+      return
+    }
     saveLocal(team, players)
   }, [team, players])
 

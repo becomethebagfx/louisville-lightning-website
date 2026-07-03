@@ -71,6 +71,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [importingUrl, setImportingUrl] = useState('');
+  const importingRef = useRef(false);
 
   // Player intro (announcement) state
   const [introStatus, setIntroStatus] = useState<'none' | 'loaded' | 'pending'>('none');
@@ -264,7 +265,8 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
   }
 
   async function handleImportSong(result: SongResult) {
-    if (importingUrl) return;
+    if (importingUrl || importingRef.current) return;
+    importingRef.current = true;
     setImportingUrl(result.previewUrl);
     setSearchError('');
     try {
@@ -282,6 +284,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
     } catch {
       setSearchError('Could not import that clip. Try another result or upload a file.');
     } finally {
+      importingRef.current = false;
       setImportingUrl('');
     }
   }

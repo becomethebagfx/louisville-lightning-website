@@ -153,6 +153,9 @@ export default function WalkUpPage() {
 
   function handleTeamSwitch(next: TeamKey) {
     if (next === team) return;
+    if (orderDirty && !window.confirm('Lineup order not saved. Switch teams anyway?')) {
+      return;
+    }
     stop();
     setOrderDirty(false);
     setTeam(next);

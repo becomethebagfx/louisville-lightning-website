@@ -36,7 +36,10 @@ export function searchSongs(term: string, limit = 6): Promise<SongResult[]> {
       script.remove()
     }
     const timer = setTimeout(() => {
-      cleanup()
+      // Leave a no-op behind: a response landing after the timeout would
+      // otherwise throw a global ReferenceError calling the deleted callback.
+      w[cbName] = () => {}
+      script.remove()
       reject(new Error('Song search timed out'))
     }, 10000)
 

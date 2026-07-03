@@ -62,6 +62,16 @@ Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
   through the live coach UI; outcome-verified on production (timing math
   + pregame advance). Wiring audit: 2 Tier2 + 8 Tier3 found and fixed,
   round 2 zero. Artifact docs/AUDIT_2026-07-03.md.
+### Done (2026-07-03, phase b)
+- SONG SEARCH shipped: "Find a Song" in the edit modal - iTunes Search
+  API (JSONP) + open-CORS preview CDN imports official 30s clips straight
+  into the existing trim/upload flow. No manual MP3s. $0.
+- TWO TEAMS shipped: Yellow/Blue tabs on /walkup backed by teams.json
+  manifest in the walkup-audio bucket (no schema change). Migration put
+  the existing 11 on Yellow; Blue empty until tryouts. Verified live with
+  a full add/search/import/save/play/delete cycle on Blue.
+- Wiring audit: 1 Tier2 (Blue-add misfile race) + 5 Tier3 found and
+  fixed; round 2 zero. Artifact docs/AUDIT_2026-07-03b.md.
 ### Now
 - Phase closed. Awaiting Brandon on open questions.
 ### Next
