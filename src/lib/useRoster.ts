@@ -1,8 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Player } from './types'
 import { supabase } from './supabase'
+import {
+  loadTeamManifest,
+  saveTeamManifest,
+  type TeamKey,
+  type TeamManifest,
+} from './db'
 
-const STORAGE_KEY = 'lightning-roster'
+const LEGACY_STORAGE_KEY = 'lightning-roster'
+const storageKey = (team: TeamKey) => `lightning-roster-${team}`
 
 const DEFAULT_ROSTER: Player[] = [
   { id: 'player-micah', name: 'Micah Davis', number: '0', songName: '' },
@@ -18,17 +25,24 @@ const DEFAULT_ROSTER: Player[] = [
   { id: 'player-reid', name: 'Reid Morrison', number: '43', songName: '' },
 ]
 
-function loadLocal(): Player[] {
+function loadLocal(team: TeamKey): Player[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : DEFAULT_ROSTER
+    const raw = localStorage.getItem(storageKey(team))
+    if (raw) return JSON.parse(raw)
+    if (team === 'yellow') {
+      // Migrate from the single-roster era
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY)
+      if (legacy) return JSON.parse(legacy)
+      return DEFAULT_ROSTER
+    }
+    return []
   } catch {
-    return DEFAULT_ROSTER
+    return team === 'yellow' ? DEFAULT_ROSTER : []
   }
 }
 
-function saveLocal(players: Player[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)) } catch {}
+function saveLocal(team: TeamKey, players: Player[]) {
+  try { localStorage.setItem(storageKey(team), JSON.stringify(players)) } catch { /* ignore */ }
 }
 
 function rowToPlayer(row: Record<string, unknown>): Player {
@@ -54,61 +68,100 @@ function playerToRow(p: Player, sortOrder?: number) {
   }
 }
 
-export function useRoster() {
-  const [players, setPlayers] = useState<Player[]>(loadLocal)
+export function useRoster(team: TeamKey) {
+  const [players, setPlayers] = useState<Player[]>(() => loadLocal(team))
+  const manifestRef = useRef<TeamManifest | null>(null)
+
+  // Reload the local snapshot when the active team changes
+  useEffect(() => {
+    setPlayers(loadLocal(team))
+  }, [team])
 
   // Sync from Supabase on mount + subscribe to realtime changes
   useEffect(() => {
     if (!supabase) return
 
-    // Initial load
-    supabase
-      .from('players')
-      .select('*')
-      .order('sort_order')
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Failed to load roster from Supabase:', error)
-          return
-        }
-        if (data && data.length > 0) {
-          const fetched = data.map(rowToPlayer)
-          setPlayers(fetched)
-          saveLocal(fetched)
-        }
-      })
-
-    // Realtime subscription - keeps all devices in sync
     const sb = supabase
+    let disposed = false
+
+    const refetch = async () => {
+      const [{ data, error }, manifest] = await Promise.all([
+        sb.from('players').select('*').order('sort_order'),
+        loadTeamManifest(),
+      ])
+      if (disposed || error || !data) {
+        if (error) console.error('Failed to load roster from Supabase:', error)
+        return
+      }
+
+      const all = data.map(rowToPlayer)
+
+      // First-run migration: no manifest yet means every existing player is
+      // Yellow (the original single roster).
+      let m = manifest
+      if (!m) {
+        m = { yellow: { playerIds: all.map(p => p.id) }, blue: { playerIds: [] } }
+        saveTeamManifest(m)
+      } else {
+        // Adopt unassigned rows (added before this feature or by a stale
+        // client) into Yellow so no player can vanish from both teams.
+        const known = new Set([...m.yellow.playerIds, ...m.blue.playerIds])
+        const orphans = all.filter(p => !known.has(p.id)).map(p => p.id)
+        if (orphans.length > 0) {
+          m = { ...m, yellow: { playerIds: [...m.yellow.playerIds, ...orphans] } }
+          saveTeamManifest(m)
+        }
+      }
+      manifestRef.current = m
+
+      const memberIds = new Set(m[team].playerIds)
+      const fetched = all.filter(p => memberIds.has(p.id))
+      setPlayers(fetched)
+      saveLocal(team, fetched)
+    }
+
+    refetch()
+
     const channel = sb
       .channel('roster-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => {
-        // On any change, refetch the full sorted roster
-        sb
-          .from('players')
-          .select('*')
-          .order('sort_order')
-          .then(({ data, error }) => {
-            if (!error && data && data.length > 0) {
-              const fetched = data.map(rowToPlayer)
-              setPlayers(fetched)
-              saveLocal(fetched)
-            }
-          })
+        refetch()
       })
       .subscribe()
 
     return () => {
+      disposed = true
       sb.removeChannel(channel)
     }
-  }, [])
+  }, [team])
 
   // Persist locally whenever players change
   useEffect(() => {
-    saveLocal(players)
-  }, [players])
+    saveLocal(team, players)
+  }, [team, players])
+
+  const addToManifest = useCallback((id: string) => {
+    const m = manifestRef.current ?? { yellow: { playerIds: [] }, blue: { playerIds: [] } }
+    if (!m[team].playerIds.includes(id)) {
+      const next = { ...m, [team]: { playerIds: [...m[team].playerIds, id] } }
+      manifestRef.current = next
+      saveTeamManifest(next)
+    }
+  }, [team])
+
+  const removeFromManifest = useCallback((id: string) => {
+    const m = manifestRef.current
+    if (!m) return
+    const next: TeamManifest = {
+      yellow: { playerIds: m.yellow.playerIds.filter(x => x !== id) },
+      blue: { playerIds: m.blue.playerIds.filter(x => x !== id) },
+    }
+    manifestRef.current = next
+    saveTeamManifest(next)
+  }, [])
 
   const addPlayer = useCallback((player: Player) => {
+    addToManifest(player.id)
     setPlayers(prev => {
       const next = [...prev, player]
       if (supabase) {
@@ -118,7 +171,7 @@ export function useRoster() {
       }
       return next
     })
-  }, [])
+  }, [addToManifest])
 
   const updatePlayer = useCallback((player: Player) => {
     setPlayers(prev => {
@@ -134,6 +187,7 @@ export function useRoster() {
   }, [])
 
   const removePlayer = useCallback((id: string) => {
+    removeFromManifest(id)
     setPlayers(prev => {
       const next = prev.filter(p => p.id !== id)
       if (supabase) {
@@ -143,7 +197,7 @@ export function useRoster() {
       }
       return next
     })
-  }, [])
+  }, [removeFromManifest])
 
   const reorderPlayers = useCallback((reordered: Player[]) => {
     setPlayers(reordered)
@@ -152,7 +206,9 @@ export function useRoster() {
   const saveOrder = useCallback(async (): Promise<boolean> => {
     const sb = supabase
     if (!sb) return true
-    // Use individual updates instead of upsert (upsert fails due to NOT NULL columns)
+    // Individual updates instead of upsert (upsert fails due to NOT NULL
+    // columns). Values 0..n per team; cross-team ties are harmless because
+    // ordering is only ever compared within one team's subset.
     const results = await Promise.all(
       players.map((p, i) =>
         sb.from('players').update({ sort_order: i }).eq('id', p.id)

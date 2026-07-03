@@ -9,7 +9,15 @@ import {
   deleteAnnouncement,
   preloadAllAudio,
   preloadAllAnnouncements,
+  type TeamKey,
 } from '../lib/db';
+
+const ACTIVE_TEAM_KEY = 'lightning-active-team';
+
+const TEAMS: { key: TeamKey; label: string }[] = [
+  { key: 'yellow', label: 'Yellow' },
+  { key: 'blue', label: 'Blue' },
+];
 import SpeakerSetup from '../components/walkup/SpeakerSetup';
 import PlayerCard from '../components/walkup/PlayerCard';
 import EditPlayerModal from '../components/walkup/EditPlayerModal';
@@ -58,7 +66,11 @@ function ReorderablePlayer({
 }
 
 export default function WalkUpPage() {
-  const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers, saveOrder } = useRoster();
+  const [team, setTeam] = useState<TeamKey>(() => {
+    const saved = localStorage.getItem(ACTIVE_TEAM_KEY);
+    return saved === 'blue' ? 'blue' : 'yellow';
+  });
+  const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers, saveOrder } = useRoster(team);
   const { playingId, isIntroSequence, play, stop, playIntros } = useAudioPlayer();
   const { isCoach, unlock, lock } = useCoachMode();
   const [editingPlayer, setEditingPlayer] = useState<Player | null | 'new'>(null);
@@ -139,6 +151,14 @@ export default function WalkUpPage() {
     setIntroRefresh(n => n + 1);
   }
 
+  function handleTeamSwitch(next: TeamKey) {
+    if (next === team) return;
+    stop();
+    setOrderDirty(false);
+    setTeam(next);
+    try { localStorage.setItem(ACTIVE_TEAM_KEY, next); } catch { /* ignore */ }
+  }
+
   return (
     <div className="min-h-screen pt-16">
       {/* Hero header */}
@@ -207,6 +227,26 @@ export default function WalkUpPage() {
 
       {/* Main content */}
       <div className="max-w-lg mx-auto px-4 py-6">
+        {/* Team switcher */}
+        <div className="mb-4 grid grid-cols-2 gap-1 p-1 rounded-lg bg-navy-800 border border-white/10">
+          {TEAMS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => handleTeamSwitch(t.key)}
+              aria-pressed={team === t.key}
+              className={`py-2.5 rounded-md font-accent uppercase tracking-widest text-sm font-bold transition-all ${
+                team === t.key
+                  ? t.key === 'yellow'
+                    ? 'bg-gold-500 text-navy-900 shadow-lg shadow-gold-500/20'
+                    : 'bg-sky-500 text-navy-900 shadow-lg shadow-sky-500/20'
+                  : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {/* Install banner */}
         <InstallBanner />
 

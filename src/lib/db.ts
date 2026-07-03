@@ -126,6 +126,62 @@ export async function deleteAudio(playerId: string): Promise<void> {
   }
 }
 
+// ---- Team roster manifest ----
+// Two teams share one players table (no schema change available); which
+// player belongs to which team lives in a small JSON object in the same
+// storage bucket. Last-write-wins on concurrent edits (roster edits are
+// rare, coach-PIN-gated events).
+
+export type TeamKey = 'yellow' | 'blue'
+
+export interface TeamManifest {
+  yellow: { playerIds: string[] }
+  blue: { playerIds: string[] }
+}
+
+const TEAMS_OBJECT = 'teams.json'
+const TEAMS_LOCAL_KEY = 'lightning-teams'
+
+export async function loadTeamManifest(): Promise<TeamManifest | null> {
+  if (supabase) {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .download(TEAMS_OBJECT)
+    if (!error && data) {
+      try {
+        const parsed = JSON.parse(await data.text()) as TeamManifest
+        if (parsed.yellow?.playerIds && parsed.blue?.playerIds) {
+          localStorage.setItem(TEAMS_LOCAL_KEY, JSON.stringify(parsed))
+          return parsed
+        }
+      } catch {
+        // fall through to local cache
+      }
+    }
+  }
+  try {
+    const raw = localStorage.getItem(TEAMS_LOCAL_KEY)
+    return raw ? (JSON.parse(raw) as TeamManifest) : null
+  } catch {
+    return null
+  }
+}
+
+export function saveTeamManifest(manifest: TeamManifest): void {
+  try { localStorage.setItem(TEAMS_LOCAL_KEY, JSON.stringify(manifest)) } catch { /* ignore */ }
+  if (supabase) {
+    supabase.storage
+      .from(BUCKET)
+      .upload(TEAMS_OBJECT, new Blob([JSON.stringify(manifest)], { type: 'application/json' }), {
+        upsert: true,
+        contentType: 'application/json',
+      })
+      .then(({ error }) => {
+        if (error) console.error('Team manifest upload failed:', error)
+      })
+  }
+}
+
 // ---- Player intro announcements ----
 // Same storage machinery as songs: memCache + IndexedDB keyed with an
 // 'ann:' prefix, Supabase object `${playerId}.announce` in the same bucket.

@@ -10,6 +10,7 @@ import {
   deleteAnnouncement,
 } from '../../lib/db';
 import { audioBufferToWavBlob } from '../../lib/wav';
+import { searchSongs, fetchPreviewBlob, type SongResult } from '../../lib/songSearch';
 
 interface Props {
   player: Player | null;
@@ -63,6 +64,13 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
   }, [stopPreview]);
 
   const [audioError, setAudioError] = useState('');
+
+  // Song search state
+  const [songQuery, setSongQuery] = useState('');
+  const [songResults, setSongResults] = useState<SongResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [importingUrl, setImportingUrl] = useState('');
 
   // Player intro (announcement) state
   const [introStatus, setIntroStatus] = useState<'none' | 'loaded' | 'pending'>('none');
@@ -238,6 +246,46 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
     setIntroLabel('');
   }
 
+  async function handleSongSearch() {
+    const term = songQuery.trim();
+    if (!term || isSearching) return;
+    setIsSearching(true);
+    setSearchError('');
+    setSongResults([]);
+    try {
+      const results = await searchSongs(term);
+      setSongResults(results);
+      if (results.length === 0) setSearchError('No songs found. Try a different search.');
+    } catch {
+      setSearchError('Search failed. Check your connection and try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  async function handleImportSong(result: SongResult) {
+    if (importingUrl) return;
+    setImportingUrl(result.previewUrl);
+    setSearchError('');
+    try {
+      const blob = await fetchPreviewBlob(result.previewUrl);
+      stopPreview();
+      pendingBlob.current = blob;
+      setSongName(`${result.trackName} - ${result.artistName}`);
+      setAudioFileName(`${result.trackName} (30s clip)`);
+      setHasAudio(false);
+      setStartTime(0);
+      setClipDuration(15);
+      await loadAudioBlob(blob);
+      setSongResults([]);
+      setSongQuery('');
+    } catch {
+      setSearchError('Could not import that clip. Try another result or upload a file.');
+    } finally {
+      setImportingUrl('');
+    }
+  }
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -389,9 +437,68 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
             />
           </div>
 
+          {/* Song search */}
+          <div>
+            <label className="block text-xs text-white/50 font-accent uppercase tracking-wider mb-1.5">
+              Find a Song
+            </label>
+            <p className="text-xs text-white/30 mb-2">
+              Searches real songs and grabs the official 30-second clip. No
+              files needed.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={songQuery}
+                onChange={e => setSongQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSongSearch(); } }}
+                placeholder="Song or artist..."
+                className="flex-1 px-4 py-3 rounded-lg bg-navy-700 border border-white/10 text-white placeholder-white/25 outline-none focus:border-gold-500/50 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={handleSongSearch}
+                disabled={isSearching || !songQuery.trim()}
+                className="px-4 py-3 rounded-lg bg-gold-500/10 border border-gold-500/30 text-gold-500 text-sm font-accent uppercase tracking-wider hover:bg-gold-500/20 transition-colors disabled:opacity-30"
+              >
+                {isSearching ? '...' : 'Search'}
+              </button>
+            </div>
+            {songResults.length > 0 && (
+              <ul className="mt-2 space-y-1.5">
+                {songResults.map(r => (
+                  <li key={r.previewUrl}>
+                    <button
+                      type="button"
+                      onClick={() => handleImportSong(r)}
+                      disabled={!!importingUrl}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-navy-700 border border-white/10 hover:border-gold-500/40 transition-colors text-left disabled:opacity-50"
+                    >
+                      {r.artworkUrl ? (
+                        <img src={r.artworkUrl} alt="" className="w-9 h-9 rounded flex-shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded bg-white/5 flex-shrink-0" />
+                      )}
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm text-white truncate">{r.trackName}</span>
+                        <span className="block text-xs text-white/40 truncate">{r.artistName}</span>
+                      </span>
+                      <span className="text-xs text-gold-500 font-accent uppercase tracking-wider flex-shrink-0">
+                        {importingUrl === r.previewUrl ? 'Adding...' : 'Use'}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {searchError && (
+              <p className="mt-1.5 text-xs text-red-400">{searchError}</p>
+            )}
+          </div>
+
           {/* Audio file */}
           <div>
-            <label className="block text-xs text-white/50 font-accent uppercase tracking-wider mb-1.5">Audio Clip</label>
+            <label className="block text-xs text-white/50 font-accent uppercase tracking-wider mb-1.5">Or Upload Audio</label>
             <input
               ref={fileRef}
               type="file"
