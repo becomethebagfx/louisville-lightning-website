@@ -52,6 +52,16 @@ Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
   live bundle verified. Verification agent round run.
 - Taylor handoff text drafted to ~/Desktop/"Taylor - Tryout Form Text.docx"
   (contains creds; kept out of repo).
+### Done (2026-07-03)
+- BallparkDJ deep research (106 agents, 23/25 claims verified) ->
+  docs/RESEARCH_BALLPARKDJ_2026-07-03.md; verdict: build announcer into
+  our app, BallparkDJ pro voices optional later.
+- PA ANNOUNCER FEATURE SHIPPED: record/upload intros in coach modal,
+  intro-then-song chaining (iOS-safe src swap), Pregame Intros mode,
+  card badges. 11 Gemini-TTS intros (Charon voice) generated and loaded
+  through the live coach UI; outcome-verified on production (timing math
+  + pregame advance). Wiring audit: 2 Tier2 + 8 Tier3 found and fixed,
+  round 2 zero. Artifact docs/AUDIT_2026-07-03.md.
 ### Now
 - Phase closed. Awaiting Brandon on open questions.
 ### Next

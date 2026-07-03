@@ -50,6 +50,7 @@ export function useAudioPlayer() {
   }, [cleanup])
 
   const makeElement = useCallback((blob: Blob) => {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current)
     const url = URL.createObjectURL(blob)
     urlRef.current = url
     const audio = document.createElement('audio')
@@ -205,9 +206,21 @@ export function useAudioPlayer() {
         return
       }
       const id = queue[index]
-      if (index > 0) swapSource(audio, getAnnouncementSync(id)!)
+      const blob = getAnnouncementSync(id)
+      if (!blob) {
+        // Intro was removed mid-sequence - skip this player
+        index++
+        playCurrent()
+        return
+      }
+      if (index > 0) swapSource(audio, blob)
       setPlayingId(id)
-      audio.play().catch(finish)
+      audio.play().catch(() => {
+        // Skip a bad intro instead of killing the whole pregame sequence
+        if (requestRef.current !== requestId) return
+        index++
+        playCurrent()
+      })
     }
 
     audio.onended = () => {

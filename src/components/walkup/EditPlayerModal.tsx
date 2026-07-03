@@ -95,6 +95,8 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
     return () => {
       stopIntroPreview();
       if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        // Detach onstop first: no decode/setState work on an unmounted modal
+        recorderRef.current.onstop = null;
         recorderRef.current.stop();
         recorderRef.current.stream.getTracks().forEach(t => t.stop());
       }
@@ -211,6 +213,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
       stopIntroPreview();
       return;
     }
+    stopPreview();
     const blob = pendingIntroBlob.current || introBlobRef.current;
     if (!blob) return;
     const url = URL.createObjectURL(blob);
@@ -253,6 +256,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
       stopPreview();
       return;
     }
+    stopIntroPreview();
 
     const blob = pendingBlob.current || audioBlobRef.current;
     if (!blob) return;
@@ -278,7 +282,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
   }
 
   function handleSave() {
-    if (!name.trim()) return;
+    if (!name.trim() || isRecording) return;
 
     const id = player?.id ?? crypto.randomUUID();
     const saved: Player = {
@@ -597,6 +601,9 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
                   {isIntroPreviewing ? 'Stop' : 'Play Intro'}
                 </button>
                 <span className="text-xs text-white/40 truncate">{introLabel}</span>
+                {introStatus === 'pending' && (
+                  <span className="text-xs text-gold-500/80 whitespace-nowrap">Not saved yet</span>
+                )}
               </div>
             )}
             {introError && (
@@ -623,7 +630,7 @@ export default function EditPlayerModal({ player, onSave, onDelete, onClose }: P
             </button>
             <button
               onClick={handleSave}
-              disabled={!name.trim()}
+              disabled={!name.trim() || isRecording}
               className="btn-lightning text-sm disabled:opacity-30"
             >
               Save

@@ -80,15 +80,18 @@ export default function WalkUpPage() {
 
   // Preload player intros the same way; track which players have one so
   // cards can badge it and the pregame button knows the queue.
+  // Keyed on the sorted id SET (not array identity): drag-reordering swaps
+  // array order on every tick and must not re-probe storage for players
+  // without intros.
+  const introScanKey = players.map(p => p.id).sort().join('|');
   useEffect(() => {
-    const ids = players.map(p => p.id);
-    if (ids.length === 0) return;
+    if (!introScanKey) return;
     let cancelled = false;
-    preloadAllAnnouncements(ids).then(found => {
+    preloadAllAnnouncements(introScanKey.split('|')).then(found => {
       if (!cancelled) setIntroIds(new Set(found));
     });
     return () => { cancelled = true; };
-  }, [players, introRefresh]);
+  }, [introScanKey, introRefresh]);
 
   function requireCoach(action: () => void) {
     if (isCoach) {

@@ -58,6 +58,8 @@ export default function PlayerCard({ player, isPlaying, isCoach, hasIntro, onPla
             {hasIntro && (
               <span
                 title="Has PA intro"
+                aria-label="Has PA intro"
+                role="img"
                 className="inline-flex items-center gap-0.5 text-gold-500/80 flex-shrink-0"
               >
                 <svg aria-hidden="true" className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
