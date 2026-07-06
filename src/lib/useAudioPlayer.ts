@@ -20,6 +20,7 @@ import {
 export function useAudioPlayer() {
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [isIntroSequence, setIsIntroSequence] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const urlRef = useRef<string | null>(null)
   const requestRef = useRef(0)
@@ -33,6 +34,7 @@ export function useAudioPlayer() {
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.onended = null
+      audioRef.current.onerror = null
       audioRef.current.onloadedmetadata = null
       audioRef.current.remove()
     }
@@ -47,6 +49,7 @@ export function useAudioPlayer() {
     cleanup()
     setPlayingId(null)
     setIsIntroSequence(false)
+    setIsBuffering(false)
   }, [cleanup])
 
   const makeElement = useCallback((blob: Blob) => {
@@ -85,12 +88,16 @@ export function useAudioPlayer() {
       audio.onloadedmetadata = null
     }
 
-    audio.onended = () => {
+    const endSong = () => {
       if (requestRef.current === requestId) {
         cleanup()
         setPlayingId(null)
       }
     }
+    audio.onended = endSong
+    // A corrupt or undecodable song blob fires `error` instead of `ended`;
+    // recover so the card never gets stuck in the playing state.
+    audio.onerror = endSong
 
     if (clipDuration && clipDuration > 0 && clipDuration <= 600) {
       timerRef.current = setTimeout(() => {
@@ -101,6 +108,7 @@ export function useAudioPlayer() {
       }, clipDuration * 1000)
     }
 
+    setIsBuffering(false)
     setPlayingId(playerId)
     audio.play().catch(() => {
       cleanup()
@@ -120,9 +128,14 @@ export function useAudioPlayer() {
   }, [makeElement, startSongOn])
 
   // Intro announcement first, then the walk-up song on the same element.
+  // `song` may be a Blob already in hand, or a fetcher to run while the intro
+  // plays (on cellular the small intro is often cached before the larger song
+  // blob finishes downloading - fetching during the intro closes that gap so
+  // the song still follows). The element is gesture-unlocked by the intro's
+  // play(), so swapping to the fetched song and playing needs no second tap.
   const startIntroThenSong = useCallback((
     intro: Blob,
-    song: Blob | null,
+    song: Blob | (() => Promise<Blob | undefined>) | null,
     playerId: string,
     requestId: number,
     startTime?: number,
@@ -130,21 +143,55 @@ export function useAudioPlayer() {
   ) => {
     const audio = makeElement(intro)
 
-    audio.onended = () => {
+    // Kick the fetch off now (synchronously) so it overlaps intro playback.
+    // Never rejects: a missing or failed song resolves to undefined, so the
+    // `ended` handler only decides "play it" vs "stop cleanly" and there is no
+    // dangling rejection while its .then is still unattached during the intro.
+    const songReady: Promise<Blob | undefined> = (
+      song instanceof Blob
+        ? Promise.resolve(song)
+        : typeof song === 'function'
+          ? song()
+          : Promise.resolve<Blob | undefined>(undefined)
+    ).catch(() => undefined)
+
+    let songSettled = false
+    songReady.then(() => { songSettled = true })
+
+    // Intro finished (or failed to decode): advance to the song on the same
+    // gesture-unlocked element. If the song blob is still downloading on slow
+    // cellular, show a buffering cue instead of silent dead air. Idempotent:
+    // an undecodable intro fires `error` AND rejects play() (below), so guard
+    // against running twice and starting two overlapping songs.
+    let advanced = false
+    const toSong = () => {
+      if (advanced) return
+      advanced = true
+      audio.onended = null
+      audio.onerror = null
       if (requestRef.current !== requestId) return
-      if (song) {
-        swapSource(audio, song)
-        startSongOn(audio, playerId, requestId, startTime, clipDuration)
-      } else {
-        cleanup()
-        setPlayingId(null)
-      }
+      if (!songSettled) setIsBuffering(true)
+      songReady.then((blob) => {
+        if (requestRef.current !== requestId) return
+        setIsBuffering(false)
+        if (blob) {
+          swapSource(audio, blob)
+          startSongOn(audio, playerId, requestId, startTime, clipDuration)
+        } else {
+          cleanup()
+          setPlayingId(null)
+        }
+      })
     }
+    audio.onended = toSong
+    // iOS fires `error` (not `ended`) on an undecodable intro; still advance.
+    audio.onerror = toSong
 
     setPlayingId(playerId)
     audio.play().catch(() => {
-      cleanup()
-      setPlayingId(null)
+      // The intro could not play (most likely an undecodable blob). Advance to
+      // the song rather than tearing down; toSong's guard dedupes with onerror.
+      toSong()
     })
   }, [makeElement, swapSource, startSongOn, cleanup])
 
@@ -153,13 +200,18 @@ export function useAudioPlayer() {
     const requestId = ++requestRef.current
     cleanup()
     setIsIntroSequence(false)
+    setIsBuffering(false)
 
     // Try sync from preloaded memory cache (preserves gesture chain for Safari)
     const intro = getAnnouncementSync(playerId)
     const song = getAudioSync(playerId)
 
     if (intro) {
-      startIntroThenSong(intro, song ?? null, playerId, requestId, startTime, clipDuration)
+      // If the song blob isn't preloaded yet (slow cellular), hand off a
+      // fetcher: the intro plays now inside the gesture and unlocks the
+      // element, and the song is fetched in parallel and swapped in at `ended`.
+      const songSource = song ?? (() => getAudio(playerId))
+      startIntroThenSong(intro, songSource, playerId, requestId, startTime, clipDuration)
     } else if (song) {
       startPlayback(song, playerId, requestId, startTime, clipDuration)
     } else {
@@ -176,6 +228,8 @@ export function useAudioPlayer() {
         } else {
           setPlayingId(null)
         }
+      }).catch(() => {
+        if (requestRef.current === requestId) setPlayingId(null)
       })
     }
   }, [cleanup, startPlayback, startIntroThenSong])
@@ -237,5 +291,5 @@ export function useAudioPlayer() {
     playCurrent()
   }, [cleanup, makeElement, swapSource])
 
-  return { playingId, isIntroSequence, play, stop, playIntros }
+  return { playingId, isIntroSequence, isBuffering, play, stop, playIntros }
 }

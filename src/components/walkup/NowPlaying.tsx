@@ -4,9 +4,10 @@ import type { Player } from '../../lib/types';
 interface Props {
   player: Player;
   onStop: () => void;
+  isBuffering?: boolean;
 }
 
-export default function NowPlaying({ player, onStop }: Props) {
+export default function NowPlaying({ player, onStop, isBuffering }: Props) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -63,6 +64,13 @@ export default function NowPlaying({ player, onStop }: Props) {
           />
         ))}
       </div>
+
+      {/* Buffering cue: intro finished, song blob still downloading */}
+      {isBuffering && (
+        <p className="mt-6 text-sm text-gold-500/80 font-accent uppercase tracking-widest">
+          Loading song...
+        </p>
+      )}
 
       {/* Stop hint */}
       <motion.p

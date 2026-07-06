@@ -71,7 +71,7 @@ export default function WalkUpPage() {
     return saved === 'blue' ? 'blue' : 'yellow';
   });
   const { players, addPlayer, updatePlayer, removePlayer, reorderPlayers, saveOrder } = useRoster(team);
-  const { playingId, isIntroSequence, play, stop, playIntros } = useAudioPlayer();
+  const { playingId, isIntroSequence, isBuffering, play, stop, playIntros } = useAudioPlayer();
   const { isCoach, unlock, lock } = useCoachMode();
   const [editingPlayer, setEditingPlayer] = useState<Player | null | 'new'>(null);
   const [showPinModal, setShowPinModal] = useState(false);
@@ -398,7 +398,7 @@ export default function WalkUpPage() {
       {/* Now Playing overlay */}
       <AnimatePresence>
         {playingPlayer && (
-          <NowPlaying player={playingPlayer} onStop={stop} />
+          <NowPlaying player={playingPlayer} onStop={stop} isBuffering={isBuffering} />
         )}
       </AnimatePresence>
 
