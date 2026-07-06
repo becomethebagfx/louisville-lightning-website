@@ -72,8 +72,28 @@ Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
   a full add/search/import/save/play/delete cycle on Blue.
 - Wiring audit: 1 Tier2 (Blue-add misfile race) + 5 Tier3 found and
   fixed; round 2 zero. Artifact docs/AUDIT_2026-07-03b.md.
+### Done (2026-07-06)
+- iPhone BUGFIX shipped (coach reported both on real iOS Safari/cellular,
+  desktop Chromium had not caught them):
+  * BUG 1 song search "Search failed": old code used a single JSONP script
+    tag to itunes.apple.com (fails on iOS/cellular). Rewrote searchSongs to
+    fetch-first (iTunes API reflects Origin -> CORS works) -> Apple JSONP ->
+    Deezer JSONP. fetchPreviewBlob got a 15s AbortController timeout.
+  * BUG 2 intro plays but song does not follow: play() sync path found the
+    intro blob but not the (larger) song blob on slow cellular, so it ran
+    startIntroThenSong(intro, null) and stopped. Now hands off a song fetcher
+    that overlaps the intro and swaps the song onto the SAME gesture-unlocked
+    element at `ended`; "Loading song..." buffering cue in NowPlaying.
+- Wiring audit 3 rounds: R1 3 Tier2 + 3 Tier3, R2 1 Tier2 (idempotent
+  intro->song advance dedupes onerror + play().catch), R3 live-verified
+  (search 200 via fetch, intro->song plays on one element). Zero after fixes.
+  Artifact docs/AUDIT_2026-07-06.md. Commit d413abf deployed
+  (bundle index-BCww8gqk.js live; api.deezer.com + "Loading song" confirmed).
+- SMS sent to Brandon (SM8eeb9fca...): fixes live, close+reopen Songs tab to
+  clear cache, retry search + play. CANNOT test real iOS from here -> Brandon
+  confirms on his phone.
 ### Now
-- Phase closed. Awaiting Brandon on open questions.
+- Phase closed. Awaiting Brandon's iPhone confirmation on the two bug fixes.
 ### Next
 - If approved: publish Beau Schoenbaechler (Blue co-coach); Apps Script
   auto-close after Jul 26 (needs his OAuth click); confirm age cutoffs.
