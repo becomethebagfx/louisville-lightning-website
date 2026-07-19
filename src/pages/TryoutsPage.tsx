@@ -18,6 +18,8 @@ const fadeUp = {
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+const PARENT_HANDOUT_URL = '/lightning-tryout-schedule.pdf';
+
 function BoltIcon({ className }: { className?: string }) {
   return (
     <svg aria-hidden="true" className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -180,6 +182,70 @@ export default function TryoutsPage() {
               </motion.div>
             ))}
           </div>
+        </section>
+
+        {/* Tryout schedule / parent information sheet */}
+        <section className="relative bg-navy-900 pt-6 pb-8 px-4">
+          <motion.div
+            {...fadeUp}
+            transition={{ duration: 0.8, ease }}
+            className="max-w-3xl mx-auto text-center"
+          >
+            <h2 className="text-stadium text-3xl md:text-4xl">
+              <span className="text-white">TRYOUT</span>{' '}
+              <span className="text-gradient-gold">SCHEDULE</span>
+            </h2>
+            <p className="mt-3 text-white/60 max-w-2xl mx-auto">
+              See how the two hour tryout runs, station by station, so you know what
+              to expect. Print it or save it to your phone for the day.
+            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+              <a
+                href={PARENT_HANDOUT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
+              >
+                <BoltIcon className="w-4 h-4" />
+                View Schedule
+              </a>
+              <a
+                href={PARENT_HANDOUT_URL}
+                download="Louisville Lightning Tryout Schedule.pdf"
+                className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2"
+              >
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download PDF
+              </a>
+            </div>
+
+            {/* Embedded preview (best on desktop; mobile users use the buttons above) */}
+            <div className="mt-8 card-electric rounded-lg p-1 sm:p-2 overflow-hidden">
+              <object
+                data={`${PARENT_HANDOUT_URL}#view=FitH`}
+                type="application/pdf"
+                aria-label="Louisville Lightning tryout schedule"
+                className="w-full rounded-md bg-white h-[560px] sm:h-[720px] md:h-[900px]"
+              >
+                <div className="p-8 text-center bg-white rounded-md">
+                  <p className="text-navy-800 font-body">
+                    Your browser can&apos;t preview the PDF here.
+                  </p>
+                  <a
+                    href={PARENT_HANDOUT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-navy-700 underline underline-offset-2 font-semibold"
+                  >
+                    Open the tryout schedule
+                  </a>
+                </div>
+              </object>
+            </div>
+          </motion.div>
         </section>
 
         {/* Two teams */}
