@@ -7,6 +7,9 @@ import {
   TRYOUT_LOCATION,
   TRYOUT_FORM_URL,
   LIGHTNING_TEAMS,
+  TRYOUTS_COMPLETE,
+  SEASON_YEAR,
+  ROSTERS,
 } from '../lib/tryoutData';
 
 // Head coaches derive from LIGHTNING_TEAMS; assistants have no home in
@@ -41,7 +44,7 @@ export default function Schedule() {
           className="text-center mb-16"
         >
           <span className="text-gold-500 font-accent uppercase tracking-[0.2em] text-sm">
-            Now Recruiting · 8U
+            {TRYOUTS_COMPLETE ? `${SEASON_YEAR} Season · 8U` : 'Now Recruiting · 8U'}
           </span>
           <h2 className="text-stadium text-4xl md:text-6xl mt-4">
             <span className="text-white">THE</span>{' '}
@@ -62,25 +65,54 @@ export default function Schedule() {
                 <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Tryout Dates
+                {TRYOUTS_COMPLETE ? `${SEASON_YEAR} Rosters` : 'Tryout Dates'}
               </h3>
-              <div className="space-y-3">
-                {TRYOUT_GROUPS.map((g) => (
-                  <div
-                    key={g.ageGroup}
-                    className="flex items-center justify-center gap-4 text-white/80"
-                  >
-                    <span className="text-gold-500 font-accent font-bold w-12 text-right">{g.ageGroup}</span>
-                    <span className="text-white/30">|</span>
-                    <span className="w-48 text-left">
-                      {g.sessions.map((s) => (s.weekday ? `${s.weekday}, ${s.date}` : s.date)).join(' & ')}
-                    </span>
+              {TRYOUTS_COMPLETE ? (
+                <>
+                  <div className="space-y-3">
+                    {Object.entries(ROSTERS).map(([team, players]) => (
+                      <div
+                        key={team}
+                        className="flex items-center justify-center gap-4 text-white/80"
+                      >
+                        <span
+                          className={`font-accent font-bold w-32 text-right ${
+                            team.includes('Yellow') ? 'text-gold-500' : 'text-sky-400'
+                          }`}
+                        >
+                          {team}
+                        </span>
+                        <span className="text-white/30">|</span>
+                        <span className="w-28 text-left">{players.length} players</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <p className="mt-4 text-white/50 text-sm text-center">
-                Tryouts run 4:00 to 6:00 PM.
-              </p>
+                  <p className="mt-4 text-white/50 text-sm text-center">
+                    {SEASON_YEAR} tryouts are complete. Congratulations to every
+                    player who earned a spot.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {TRYOUT_GROUPS.map((g) => (
+                      <div
+                        key={g.ageGroup}
+                        className="flex items-center justify-center gap-4 text-white/80"
+                      >
+                        <span className="text-gold-500 font-accent font-bold w-12 text-right">{g.ageGroup}</span>
+                        <span className="text-white/30">|</span>
+                        <span className="w-48 text-left">
+                          {g.sessions.map((s) => (s.weekday ? `${s.weekday}, ${s.date}` : s.date)).join(' & ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-white/50 text-sm text-center">
+                    Tryouts run 4:00 to 6:00 PM.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Location */}
@@ -117,7 +149,7 @@ export default function Schedule() {
                 to="/tryouts"
                 className={`${TRYOUT_FORM_URL ? 'btn-lightning-outline' : 'btn-lightning'} text-sm inline-flex items-center gap-2`}
               >
-                Full Tryout Info
+                {TRYOUTS_COMPLETE ? `See the ${SEASON_YEAR} Rosters` : 'Full Tryout Info'}
                 <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>

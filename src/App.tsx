@@ -39,6 +39,9 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/tryouts" element={<TryoutsPage />} />
+          {/* Shareable aliases: the roster announcement lives on the same page */}
+          <Route path="/roster" element={<TryoutsPage />} />
+          <Route path="/rosters" element={<TryoutsPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/walkup" element={<WalkUpPage />} />
           <Route path="/scout" element={<ScoutPage />} />

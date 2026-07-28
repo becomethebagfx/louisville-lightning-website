@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { TRYOUT_GROUPS, TRYOUT_MOTTO } from '../lib/tryoutData';
+import { TRYOUT_GROUPS, TRYOUT_MOTTO, TRYOUTS_COMPLETE } from '../lib/tryoutData';
 
 export default function Contact() {
   const ref = useRef(null);
@@ -30,7 +30,9 @@ export default function Contact() {
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mt-8 text-white/60 text-lg md:text-xl max-w-xl mx-auto"
         >
-          Questions about tryouts, the team, or anything Louisville Lightning? Reach out anytime.
+          {TRYOUTS_COMPLETE
+            ? 'Questions about the team, the season, or anything Louisville Lightning? Reach out anytime.'
+            : 'Questions about tryouts, the team, or anything Louisville Lightning? Reach out anytime.'}
         </motion.p>
 
         {/* Contact Cards */}
@@ -50,7 +52,11 @@ export default function Contact() {
               <div className="text-stadium text-2xl text-white mt-1">{g.contactName}</div>
               <div className="mt-4 flex flex-col gap-3">
                 <a
-                  href={`sms:${g.contactPhoneRaw}?body=${encodeURIComponent(`Hi! I'm interested in Louisville Lightning ${g.ageGroup} tryouts.`)}`}
+                  href={`sms:${g.contactPhoneRaw}?body=${encodeURIComponent(
+                    TRYOUTS_COMPLETE
+                      ? `Hi! I have a question about Louisville Lightning ${g.ageGroup}.`
+                      : `Hi! I'm interested in Louisville Lightning ${g.ageGroup} tryouts.`
+                  )}`}
                   className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
                 >
                   <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

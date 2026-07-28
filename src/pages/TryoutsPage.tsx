@@ -8,6 +8,10 @@ import {
   TRYOUT_LOOKING_FOR,
   TRYOUT_FORM_URL,
   LIGHTNING_TEAMS,
+  TRYOUTS_COMPLETE,
+  SEASON_YEAR,
+  ROSTERS,
+  ROSTER_GRAPHIC_URL,
 } from '../lib/tryoutData';
 
 const fadeUp = {
@@ -56,8 +60,17 @@ export default function TryoutsPage() {
             transition={{ duration: 0.8, delay: 0.2, ease }}
             className="text-stadium text-5xl md:text-7xl lg:text-8xl"
           >
-            <span className="text-white">BASEBALL</span>{' '}
-            <span className="text-gradient-gold glow-gold">TRYOUTS</span>
+            {TRYOUTS_COMPLETE ? (
+              <>
+                <span className="text-white">{SEASON_YEAR}</span>{' '}
+                <span className="text-gradient-gold glow-gold">ROSTERS</span>
+              </>
+            ) : (
+              <>
+                <span className="text-white">BASEBALL</span>{' '}
+                <span className="text-gradient-gold glow-gold">TRYOUTS</span>
+              </>
+            )}
           </motion.h1>
 
           <motion.p
@@ -66,7 +79,9 @@ export default function TryoutsPage() {
             transition={{ duration: 0.8, delay: 0.35, ease }}
             className="mt-4 text-gold-500 font-accent uppercase tracking-[0.25em] text-sm md:text-base"
           >
-            Come be a part of Louisville Lightning
+            {TRYOUTS_COMPLETE
+              ? '8U Tryouts Complete'
+              : 'Come be a part of Louisville Lightning'}
           </motion.p>
 
           <motion.p
@@ -75,7 +90,9 @@ export default function TryoutsPage() {
             transition={{ duration: 0.8, delay: 0.45, ease }}
             className="mt-5 text-white/70 text-lg max-w-2xl mx-auto font-body"
           >
-            {TRYOUT_LOOKING_FOR}
+            {TRYOUTS_COMPLETE
+              ? 'Congratulations to every player who earned a spot, and thank you to everyone who came out to compete.'
+              : TRYOUT_LOOKING_FOR}
           </motion.p>
 
           {TRYOUT_FORM_URL && (
@@ -118,30 +135,44 @@ export default function TryoutsPage() {
                       {g.ageGroup}
                     </span>
                     <span className="text-white/60 font-accent uppercase tracking-wider text-sm">
-                      Tryout{g.sessions.length > 1 ? 's' : ''}
+                      {TRYOUTS_COMPLETE
+                        ? `${SEASON_YEAR} Season`
+                        : `Tryout${g.sessions.length > 1 ? 's' : ''}`}
                     </span>
                   </div>
 
-                  {/* Sessions */}
-                  <div className="mt-6 space-y-3">
-                    {g.sessions.map((s, j) => (
-                      <div
-                        key={j}
-                        className="flex items-center justify-between gap-3 border-l-2 border-gold-500/60 pl-4 py-1"
-                      >
-                        <div className="text-white">
-                          <div className="font-accent uppercase tracking-wide text-lg">
-                            {s.weekday ? `${s.weekday}, ${s.date}` : s.date}
-                          </div>
-                        </div>
-                        {g.time !== 'TBD' && (
-                          <span className="text-gold-500 font-accent font-bold whitespace-nowrap">
-                            {g.time}
-                          </span>
-                        )}
+                  {/* Sessions, or the closed-season notice */}
+                  {TRYOUTS_COMPLETE ? (
+                    <div className="mt-6 border-l-2 border-gold-500/60 pl-4 py-1">
+                      <div className="font-accent uppercase tracking-wide text-lg text-white">
+                        Tryouts Complete
                       </div>
-                    ))}
-                  </div>
+                      <p className="mt-1 text-white/50 text-sm">
+                        Rosters are set for {SEASON_YEAR}. Reach out below to ask
+                        about openings or next season.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-6 space-y-3">
+                      {g.sessions.map((s, j) => (
+                        <div
+                          key={j}
+                          className="flex items-center justify-between gap-3 border-l-2 border-gold-500/60 pl-4 py-1"
+                        >
+                          <div className="text-white">
+                            <div className="font-accent uppercase tracking-wide text-lg">
+                              {s.weekday ? `${s.weekday}, ${s.date}` : s.date}
+                            </div>
+                          </div>
+                          {g.time !== 'TBD' && (
+                            <span className="text-gold-500 font-accent font-bold whitespace-nowrap">
+                              {g.time}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Eligibility */}
                   <div className="mt-6 pt-5 border-t border-white/10 space-y-1">
@@ -159,7 +190,11 @@ export default function TryoutsPage() {
                     </div>
                     <div className="mt-3 flex flex-col sm:flex-row gap-3">
                       <a
-                        href={`sms:${g.contactPhoneRaw}?body=${encodeURIComponent(`Hi! I'm interested in Louisville Lightning ${g.ageGroup} tryouts.`)}`}
+                        href={`sms:${g.contactPhoneRaw}?body=${encodeURIComponent(
+                          TRYOUTS_COMPLETE
+                            ? `Hi! I have a question about Louisville Lightning ${g.ageGroup}.`
+                            : `Hi! I'm interested in Louisville Lightning ${g.ageGroup} tryouts.`
+                        )}`}
                         className="btn-lightning text-sm inline-flex items-center justify-center gap-2 flex-1"
                       >
                         <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -184,71 +219,159 @@ export default function TryoutsPage() {
           </div>
         </section>
 
-        {/* Tryout schedule / parent information sheet */}
-        <section className="relative bg-navy-900 pt-6 pb-8 px-4">
-          <motion.div
-            {...fadeUp}
-            transition={{ duration: 0.8, ease }}
-            className="max-w-3xl mx-auto text-center"
-          >
-            <h2 className="text-stadium text-3xl md:text-4xl">
-              <span className="text-white">TRYOUT</span>{' '}
-              <span className="text-gradient-gold">SCHEDULE</span>
-            </h2>
-            <p className="mt-3 text-white/60 max-w-2xl mx-auto">
-              See how the two hour tryout runs, station by station, so you know what
-              to expect. Print it or save it to your phone for the day.
-            </p>
+        {/* Rosters (season complete) or tryout schedule handout (season open) */}
+        {TRYOUTS_COMPLETE ? (
+          <section className="relative bg-navy-900 pt-6 pb-8 px-4">
+            <motion.div
+              {...fadeUp}
+              transition={{ duration: 0.8, ease }}
+              className="max-w-5xl mx-auto text-center"
+            >
+              <h2 className="text-stadium text-3xl md:text-4xl">
+                <span className="text-white">MEET THE</span>{' '}
+                <span className="text-gradient-gold">TEAMS</span>
+              </h2>
+              <p className="mt-3 text-white/60 max-w-2xl mx-auto">
+                Our {SEASON_YEAR} 8U rosters, straight from the coaching staff.
+              </p>
 
-            <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
-              <a
-                href={PARENT_HANDOUT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
-              >
-                <BoltIcon className="w-4 h-4" />
-                View Schedule
-              </a>
-              <a
-                href={PARENT_HANDOUT_URL}
-                download="Louisville Lightning Tryout Schedule.pdf"
-                className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2"
-              >
-                <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download PDF
-              </a>
-            </div>
+              <div className="mt-8 grid sm:grid-cols-2 gap-6 text-left">
+                {LIGHTNING_TEAMS.map((t, i) => {
+                  const players = ROSTERS[t.name] ?? [];
+                  const isYellow = t.colorWord === 'Yellow';
+                  return (
+                    <motion.div
+                      key={t.name}
+                      {...fadeUp}
+                      transition={{ duration: 0.8, delay: 0.1 * (i + 1), ease }}
+                    >
+                      <div className="card-electric rounded-lg overflow-hidden h-full">
+                        <div
+                          className={`px-6 py-4 text-center ${
+                            isYellow ? 'bg-gold-500' : 'bg-sky-400'
+                          }`}
+                        >
+                          <div className="text-stadium text-2xl md:text-3xl text-navy-900 leading-none">
+                            {t.name.toUpperCase()}
+                          </div>
+                          <div className="mt-1 text-navy-900/70 font-accent uppercase tracking-wider text-xs">
+                            Head Coach {t.headCoach}
+                          </div>
+                        </div>
+                        <ol className="p-5 sm:p-6 space-y-0">
+                          {players.map((p, idx) => (
+                            <li
+                              key={p}
+                              className="flex items-center gap-3 py-2.5 border-b border-white/10 last:border-b-0"
+                            >
+                              <span
+                                className={`font-accent font-bold text-xs w-6 text-right flex-shrink-0 ${
+                                  isYellow ? 'text-gold-500' : 'text-sky-400'
+                                }`}
+                              >
+                                {String(idx + 1).padStart(2, '0')}
+                              </span>
+                              <span className="text-white font-body">{p}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
 
-            {/* Embedded preview (best on desktop; mobile users use the buttons above) */}
-            <div className="mt-8 card-electric rounded-lg p-1 sm:p-2 overflow-hidden">
-              <object
-                data={`${PARENT_HANDOUT_URL}#view=FitH`}
-                type="application/pdf"
-                aria-label="Louisville Lightning tryout schedule"
-                className="w-full rounded-md bg-white h-[560px] sm:h-[720px] md:h-[900px]"
-              >
-                <div className="p-8 text-center bg-white rounded-md">
-                  <p className="text-navy-800 font-body">
-                    Your browser can&apos;t preview the PDF here.
-                  </p>
-                  <a
-                    href={PARENT_HANDOUT_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-navy-700 underline underline-offset-2 font-semibold"
-                  >
-                    Open the tryout schedule
-                  </a>
-                </div>
-              </object>
-            </div>
-          </motion.div>
-        </section>
+              <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+                <a
+                  href={ROSTER_GRAPHIC_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
+                >
+                  <BoltIcon className="w-4 h-4" />
+                  View Roster Graphic
+                </a>
+                <a
+                  href={ROSTER_GRAPHIC_URL}
+                  download={`Louisville Lightning ${SEASON_YEAR} Rosters.png`}
+                  className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2"
+                >
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download to Share
+                </a>
+              </div>
+            </motion.div>
+          </section>
+        ) : (
+          <section className="relative bg-navy-900 pt-6 pb-8 px-4">
+            <motion.div
+              {...fadeUp}
+              transition={{ duration: 0.8, ease }}
+              className="max-w-3xl mx-auto text-center"
+            >
+              <h2 className="text-stadium text-3xl md:text-4xl">
+                <span className="text-white">TRYOUT</span>{' '}
+                <span className="text-gradient-gold">SCHEDULE</span>
+              </h2>
+              <p className="mt-3 text-white/60 max-w-2xl mx-auto">
+                See how the two hour tryout runs, station by station, so you know what
+                to expect. Print it or save it to your phone for the day.
+              </p>
 
-        {/* Two teams */}
+              <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+                <a
+                  href={PARENT_HANDOUT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
+                >
+                  <BoltIcon className="w-4 h-4" />
+                  View Schedule
+                </a>
+                <a
+                  href={PARENT_HANDOUT_URL}
+                  download="Louisville Lightning Tryout Schedule.pdf"
+                  className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2"
+                >
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download PDF
+                </a>
+              </div>
+
+              {/* Embedded preview (best on desktop; mobile users use the buttons above) */}
+              <div className="mt-8 card-electric rounded-lg p-1 sm:p-2 overflow-hidden">
+                <object
+                  data={`${PARENT_HANDOUT_URL}#view=FitH`}
+                  type="application/pdf"
+                  aria-label="Louisville Lightning tryout schedule"
+                  className="w-full rounded-md bg-white h-[560px] sm:h-[720px] md:h-[900px]"
+                >
+                  <div className="p-8 text-center bg-white rounded-md">
+                    <p className="text-navy-800 font-body">
+                      Your browser can&apos;t preview the PDF here.
+                    </p>
+                    <a
+                      href={PARENT_HANDOUT_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-navy-700 underline underline-offset-2 font-semibold"
+                    >
+                      Open the tryout schedule
+                    </a>
+                  </div>
+                </object>
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* Two teams: registration-season explainer. Once the season's rosters
+            are posted the section above already names both teams and coaches. */}
+        {!TRYOUTS_COMPLETE && (
         <section className="relative bg-navy-900 pt-8 pb-4 px-4">
           <motion.div
             {...fadeUp}
@@ -293,6 +416,7 @@ export default function TryoutsPage() {
             ))}
           </div>
         </section>
+        )}
 
         {/* Location */}
         <section className="relative bg-navy-900 py-12 px-4">
@@ -310,7 +434,7 @@ export default function TryoutsPage() {
               </div>
               <div className="flex-1">
                 <div className="text-gold-500 font-accent uppercase tracking-wider text-xs">
-                  Tryout Location
+                  {TRYOUTS_COMPLETE ? 'Where We Play' : 'Tryout Location'}
                 </div>
                 <div className="text-stadium text-2xl md:text-3xl text-white mt-1">
                   {TRYOUT_LOCATION.name}

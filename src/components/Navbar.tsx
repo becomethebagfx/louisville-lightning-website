@@ -1,11 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { TRYOUTS_COMPLETE, TRYOUT_FORM_URL } from '../lib/tryoutData';
 
 export default function Navbar() {
   const location = useLocation();
   const isWalkup = location.pathname === '/walkup';
   const isScout = location.pathname === '/scout';
-  const isTryouts = location.pathname === '/tryouts';
+  const isTryouts =
+    location.pathname === '/tryouts' ||
+    location.pathname === '/roster' ||
+    location.pathname === '/rosters';
   const isRegister = location.pathname === '/register';
   const isHome = !isWalkup && !isScout && !isTryouts && !isRegister;
 
@@ -51,18 +55,20 @@ export default function Navbar() {
                   : 'text-gold-400 hover:text-gold-300 hover:bg-gold-500/10'
               }`}
             >
-              Tryouts
+              {TRYOUTS_COMPLETE ? 'Rosters' : 'Tryouts'}
             </Link>
-            <Link
-              to="/register"
-              className={`px-2 sm:px-3 py-2.5 rounded-lg font-accent uppercase tracking-wider text-xs sm:text-sm transition-all ${
-                isRegister
-                  ? 'text-gold-500 bg-gold-500/10'
-                  : 'text-gold-400 hover:text-gold-300 hover:bg-gold-500/10'
-              }`}
-            >
-              Register
-            </Link>
+            {TRYOUT_FORM_URL && (
+              <Link
+                to="/register"
+                className={`px-2 sm:px-3 py-2.5 rounded-lg font-accent uppercase tracking-wider text-xs sm:text-sm transition-all ${
+                  isRegister
+                    ? 'text-gold-500 bg-gold-500/10'
+                    : 'text-gold-400 hover:text-gold-300 hover:bg-gold-500/10'
+                }`}
+              >
+                Register
+              </Link>
+            )}
             <Link
               to="/walkup"
               className={`px-2 sm:px-3 py-2.5 rounded-lg font-accent uppercase tracking-wider text-xs sm:text-sm transition-all flex items-center gap-1.5 ${

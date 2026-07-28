@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { TRYOUTS_COMPLETE, TRYOUT_FORM_URL } from '../lib/tryoutData';
 
 export default function Footer() {
   return (
@@ -54,14 +55,16 @@ export default function Footer() {
               to="/tryouts"
               className="text-gold-400 hover:text-gold-300 transition-colors font-accent uppercase tracking-wider text-sm py-1"
             >
-              Tryouts
+              {TRYOUTS_COMPLETE ? 'Rosters' : 'Tryouts'}
             </Link>
-            <Link
-              to="/register"
-              className="text-gold-400 hover:text-gold-300 transition-colors font-accent uppercase tracking-wider text-sm py-1"
-            >
-              Register
-            </Link>
+            {TRYOUT_FORM_URL && (
+              <Link
+                to="/register"
+                className="text-gold-400 hover:text-gold-300 transition-colors font-accent uppercase tracking-wider text-sm py-1"
+              >
+                Register
+              </Link>
+            )}
             <Link
               to="/walkup"
               className="text-white/60 hover:text-gold-500 transition-colors font-accent uppercase tracking-wider text-sm py-1 flex items-center gap-1.5"

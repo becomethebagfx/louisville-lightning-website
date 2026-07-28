@@ -18,6 +18,15 @@ export interface TryoutGroup {
   contactPhoneRaw: string; // for tel:/sms: links
 }
 
+// ------------------------------------------------------------
+// SEASON STATE
+// Flip TRYOUTS_COMPLETE back to false (and restore TRYOUT_FORM_URL)
+// when the next tryout cycle opens. Every surface reads this flag:
+// hero banner, navbar, footer, schedule block, /tryouts, /register.
+// ------------------------------------------------------------
+export const SEASON_YEAR = '2026';
+export const TRYOUTS_COMPLETE = true;
+
 export const TRYOUT_GROUPS: TryoutGroup[] = [
   {
     ageGroup: '8U',
@@ -39,8 +48,10 @@ export const TRYOUT_GROUPS: TryoutGroup[] = [
 // Responses flow to the "Louisville Lightning Tryout Signups 2026" Google
 // Sheet on loulightningclub@gmail.com. Embedded on /register; set to '' to
 // hide every registration CTA and the page content.
-export const TRYOUT_FORM_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSdyTg5jwOh_UlYRFllwELdF7VL5TuOo_gEUiY3De5SEb-Sfxw/viewform';
+// 2026 tryouts are complete, so registration is closed everywhere. The live
+// form URL is kept here (commented) so next season is a one-line restore.
+// 'https://docs.google.com/forms/d/e/1FAIpQLSdyTg5jwOh_UlYRFllwELdF7VL5TuOo_gEUiY3De5SEb-Sfxw/viewform'
+export const TRYOUT_FORM_URL = '';
 
 export interface LightningTeam {
   name: string; // 'Lightning Yellow' | 'Lightning Blue'
@@ -53,6 +64,45 @@ export const LIGHTNING_TEAMS: LightningTeam[] = [
   { name: 'Lightning Yellow', colorWord: 'Yellow', headCoach: 'Taylor Davis' },
   { name: 'Lightning Blue', colorWord: 'Blue', headCoach: 'Danny Knapp' },
 ];
+
+// ------------------------------------------------------------
+// 2026 ROSTERS
+// Confirmed by Coach Taylor after the July 26 tryout. Spellings follow the
+// parent-submitted signup form (Schoenbaechler, Eicher); first names use the
+// nickname each family goes by.
+// ------------------------------------------------------------
+export const ROSTERS: Record<string, string[]> = {
+  'Lightning Yellow': [
+    'Micah Davis',
+    'Colt Quesenberry',
+    'Kashden Deacon',
+    'Kash Kittel',
+    'Grayson Abramson',
+    'Grant Churchman',
+    'Mason Schechter',
+    'Elijah Hayman',
+    'Eli Brown',
+    'Isaiah Carroll',
+    'Reid Morrison',
+  ],
+  'Lightning Blue': [
+    'Rhodes Schoenbaechler',
+    'Davey Knapp',
+    'Gus Denson',
+    'Beau Kerins',
+    'Ryan Zeller',
+    'Paxton Eicher',
+    'Nolan Shumaker',
+    'Jack Lesser',
+    'Victor Henry',
+    'Landry Burba',
+    'Anderson West',
+    'Crew Thieneman',
+  ],
+};
+
+// Shareable announcement graphic (same art Coach Taylor posts to Facebook).
+export const ROSTER_GRAPHIC_URL = '/lightning-2026-rosters.png';
 
 export const TRYOUT_LOCATION = {
   name: 'Watkins Church',

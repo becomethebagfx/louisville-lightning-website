@@ -1,7 +1,13 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import LightningBackground from '../components/LightningBackground';
 import Footer from '../components/Footer';
-import { TRYOUT_FORM_URL, LIGHTNING_TEAMS } from '../lib/tryoutData';
+import {
+  TRYOUT_FORM_URL,
+  LIGHTNING_TEAMS,
+  TRYOUTS_COMPLETE,
+  SEASON_YEAR,
+} from '../lib/tryoutData';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -32,7 +38,9 @@ export default function RegisterPage() {
             className="text-stadium text-4xl md:text-6xl lg:text-7xl"
           >
             <span className="text-white">TRYOUT</span>{' '}
-            <span className="text-gradient-gold glow-gold">REGISTRATION</span>
+            <span className="text-gradient-gold glow-gold">
+              {TRYOUTS_COMPLETE ? 'REGISTRATION CLOSED' : 'REGISTRATION'}
+            </span>
           </motion.h1>
 
           <motion.p
@@ -41,8 +49,9 @@ export default function RegisterPage() {
             transition={{ duration: 0.8, delay: 0.3, ease }}
             className="mt-4 text-white/70 text-lg max-w-2xl mx-auto font-body"
           >
-            Complete the information sheet and waiver below. One form per
-            player. You will get an email copy when you submit.
+            {TRYOUTS_COMPLETE
+              ? `Thank you to every family who registered for ${SEASON_YEAR} tryouts.`
+              : 'Complete the information sheet and waiver below. One form per player. You will get an email copy when you submit.'}
           </motion.p>
 
           <motion.p
@@ -76,6 +85,22 @@ export default function RegisterPage() {
                 >
                   Loading form...
                 </iframe>
+              </div>
+            ) : TRYOUTS_COMPLETE ? (
+              <div className="text-center">
+                <p className="text-white/70 text-lg font-body">
+                  {SEASON_YEAR} tryouts are complete and our rosters are set.
+                </p>
+                <p className="mt-2 text-white/50">
+                  Registration will reopen for the next tryout cycle. Reach out
+                  any time to ask about openings.
+                </p>
+                <Link
+                  to="/tryouts"
+                  className="btn-lightning text-sm inline-flex items-center gap-2 mt-6"
+                >
+                  See the {SEASON_YEAR} Rosters
+                </Link>
               </div>
             ) : (
               <p className="text-center text-white/60">
