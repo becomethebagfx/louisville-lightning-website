@@ -24,8 +24,12 @@ export interface TryoutGroup {
 // when the next tryout cycle opens. Every surface reads this flag:
 // hero banner, navbar, footer, schedule block, /tryouts, /register.
 // ------------------------------------------------------------
-export const SEASON_YEAR = '2026';
+// SEASON_YEAR is display copy and contains a slash, so anything that becomes a
+// filename must use SEASON_SLUG instead.
+export const SEASON_YEAR = '2026 / 2027';
+export const SEASON_SLUG = '2026-2027';
 export const TRYOUTS_COMPLETE = true;
+export const CLUB_NAME = 'Louisville Lightning Baseball Club';
 
 export const TRYOUT_GROUPS: TryoutGroup[] = [
   {
@@ -102,7 +106,7 @@ export const ROSTERS: Record<string, string[]> = {
 };
 
 // Shareable announcement graphic (same art Coach Taylor posts to Facebook).
-export const ROSTER_GRAPHIC_URL = '/lightning-2026-rosters.png';
+export const ROSTER_GRAPHIC_URL = '/lightning-2026-2027-rosters.png';
 
 export const TRYOUT_LOCATION = {
   name: 'Watkins Church',

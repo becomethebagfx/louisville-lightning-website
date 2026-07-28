@@ -10,6 +10,7 @@ import {
   LIGHTNING_TEAMS,
   TRYOUTS_COMPLETE,
   SEASON_YEAR,
+  SEASON_SLUG,
   ROSTERS,
   ROSTER_GRAPHIC_URL,
 } from '../lib/tryoutData';
@@ -258,23 +259,23 @@ export default function TryoutsPage() {
                             Head Coach {t.headCoach}
                           </div>
                         </div>
-                        <ol className="p-5 sm:p-6 space-y-0">
-                          {players.map((p, idx) => (
+                        {/* Alphabetical, and no row numbers: a numbered list on a
+                            kids' roster reads as draft order or jersey numbers. */}
+                        <ul className="p-5 sm:p-6 space-y-0">
+                          {[...players].sort().map((p) => (
                             <li
                               key={p}
                               className="flex items-center gap-3 py-2.5 border-b border-white/10 last:border-b-0"
                             >
-                              <span
-                                className={`font-accent font-bold text-xs w-6 text-right flex-shrink-0 ${
+                              <BoltIcon
+                                className={`w-3.5 h-3.5 flex-shrink-0 ${
                                   isYellow ? 'text-gold-500' : 'text-sky-400'
                                 }`}
-                              >
-                                {String(idx + 1).padStart(2, '0')}
-                              </span>
+                              />
                               <span className="text-white font-body">{p}</span>
                             </li>
                           ))}
-                        </ol>
+                        </ul>
                       </div>
                     </motion.div>
                   );
@@ -293,7 +294,7 @@ export default function TryoutsPage() {
                 </a>
                 <a
                   href={ROSTER_GRAPHIC_URL}
-                  download={`Louisville Lightning ${SEASON_YEAR} Rosters.png`}
+                  download={`Louisville Lightning Baseball Club ${SEASON_SLUG} Rosters.png`}
                   className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2"
                 >
                   <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

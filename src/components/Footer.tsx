@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TRYOUTS_COMPLETE, TRYOUT_FORM_URL } from '../lib/tryoutData';
+import { TRYOUTS_COMPLETE, TRYOUT_FORM_URL, CLUB_NAME } from '../lib/tryoutData';
 
 export default function Footer() {
   return (
@@ -114,7 +114,7 @@ export default function Footer() {
           className="mt-10 pt-6 border-t border-white/5 text-center"
         >
           <p className="text-white/50 text-sm">
-            &copy; {new Date().getFullYear()} Louisville Lightning. All rights reserved.
+            &copy; {new Date().getFullYear()} {CLUB_NAME}. All rights reserved.
           </p>
         </motion.div>
       </div>

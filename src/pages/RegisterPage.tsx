@@ -50,7 +50,7 @@ export default function RegisterPage() {
             className="mt-4 text-white/70 text-lg max-w-2xl mx-auto font-body"
           >
             {TRYOUTS_COMPLETE
-              ? `Thank you to every family who registered for ${SEASON_YEAR} tryouts.`
+              ? 'Thank you to every family who came out and tried out.'
               : 'Complete the information sheet and waiver below. One form per player. You will get an email copy when you submit.'}
           </motion.p>
 
