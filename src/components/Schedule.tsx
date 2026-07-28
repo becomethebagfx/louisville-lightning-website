@@ -9,7 +9,7 @@ import {
   LIGHTNING_TEAMS,
   TRYOUTS_COMPLETE,
   SEASON_YEAR,
-  ROSTERS,
+  ROSTER_SIZES,
 } from '../lib/tryoutData';
 
 // Head coaches derive from LIGHTNING_TEAMS; assistants have no home in
@@ -70,7 +70,7 @@ export default function Schedule() {
               {TRYOUTS_COMPLETE ? (
                 <>
                   <div className="space-y-3">
-                    {Object.entries(ROSTERS).map(([team, players]) => (
+                    {Object.entries(ROSTER_SIZES).map(([team, size]) => (
                       <div
                         key={team}
                         className="flex items-center justify-center gap-4 text-white/80"
@@ -83,13 +83,13 @@ export default function Schedule() {
                           {team}
                         </span>
                         <span className="text-white/30">|</span>
-                        <span className="w-28 text-left">{players.length} players</span>
+                        <span className="w-28 text-left">{size} players</span>
                       </div>
                     ))}
                   </div>
                   <p className="mt-4 text-white/50 text-sm text-center">
-                    {SEASON_YEAR} tryouts are complete. Congratulations to every
-                    player who earned a spot.
+                    {SEASON_YEAR} tryouts are complete. Welcome to the Lightning
+                    family.
                   </p>
                 </>
               ) : (

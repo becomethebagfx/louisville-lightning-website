@@ -70,43 +70,16 @@ export const LIGHTNING_TEAMS: LightningTeam[] = [
 ];
 
 // ------------------------------------------------------------
-// 2026 ROSTERS
-// Confirmed by Coach Taylor after the July 26 tryout. Spellings follow the
-// parent-submitted signup form (Schoenbaechler, Eicher); first names use the
-// nickname each family goes by.
+// 2026 / 2027 ROSTERS
+// DELIBERATE: player names are NOT stored here and are NOT published on this
+// site. These are minors and this repository is public. Only team sizes live
+// here. The roster graphic with names is shared by the coaches directly
+// (Facebook, team email); it is not served from this site.
 // ------------------------------------------------------------
-export const ROSTERS: Record<string, string[]> = {
-  'Lightning Yellow': [
-    'Micah Davis',
-    'Colt Quesenberry',
-    'Kashden Deacon',
-    'Kash Kittel',
-    'Grayson Abramson',
-    'Grant Churchman',
-    'Mason Schechter',
-    'Elijah Hayman',
-    'Eli Brown',
-    'Isaiah Carroll',
-    'Reid Morrison',
-  ],
-  'Lightning Blue': [
-    'Rhodes Schoenbaechler',
-    'Davey Knapp',
-    'Gus Denson',
-    'Beau Kerins',
-    'Ryan Zeller',
-    'Paxton Eicher',
-    'Nolan Shumaker',
-    'Jack Lesser',
-    'Victor Henry',
-    'Landry Burba',
-    'Anderson West',
-    'Crew Thieneman',
-  ],
+export const ROSTER_SIZES: Record<string, number> = {
+  'Lightning Yellow': 11,
+  'Lightning Blue': 12,
 };
-
-// Shareable announcement graphic (same art Coach Taylor posts to Facebook).
-export const ROSTER_GRAPHIC_URL = '/lightning-2026-2027-rosters.png';
 
 export const TRYOUT_LOCATION = {
   name: 'Watkins Church',

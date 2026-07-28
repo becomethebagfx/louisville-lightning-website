@@ -10,9 +10,7 @@ import {
   LIGHTNING_TEAMS,
   TRYOUTS_COMPLETE,
   SEASON_YEAR,
-  SEASON_SLUG,
-  ROSTERS,
-  ROSTER_GRAPHIC_URL,
+  ROSTER_SIZES,
 } from '../lib/tryoutData';
 
 const fadeUp = {
@@ -92,7 +90,7 @@ export default function TryoutsPage() {
             className="mt-5 text-white/70 text-lg max-w-2xl mx-auto font-body"
           >
             {TRYOUTS_COMPLETE
-              ? 'Congratulations to every player who earned a spot, and thank you to everyone who came out to compete.'
+              ? 'Welcome to the Lightning family, and thank you to everyone who came out to compete.'
               : TRYOUT_LOOKING_FOR}
           </motion.p>
 
@@ -233,12 +231,13 @@ export default function TryoutsPage() {
                 <span className="text-gradient-gold">TEAMS</span>
               </h2>
               <p className="mt-3 text-white/60 max-w-2xl mx-auto">
-                Our {SEASON_YEAR} 8U rosters, straight from the coaching staff.
+                Both {SEASON_YEAR} 8U teams are set. Player names are shared
+                directly with families rather than posted publicly.
               </p>
 
-              <div className="mt-8 grid sm:grid-cols-2 gap-6 text-left">
+              <div className="mt-8 grid sm:grid-cols-2 gap-6">
                 {LIGHTNING_TEAMS.map((t, i) => {
-                  const players = ROSTERS[t.name] ?? [];
+                  const size = ROSTER_SIZES[t.name];
                   const isYellow = t.colorWord === 'Yellow';
                   return (
                     <motion.div
@@ -259,50 +258,24 @@ export default function TryoutsPage() {
                             Head Coach {t.headCoach}
                           </div>
                         </div>
-                        {/* Alphabetical, and no row numbers: a numbered list on a
-                            kids' roster reads as draft order or jersey numbers. */}
-                        <ul className="p-5 sm:p-6 space-y-0">
-                          {[...players].sort().map((p) => (
-                            <li
-                              key={p}
-                              className="flex items-center gap-3 py-2.5 border-b border-white/10 last:border-b-0"
-                            >
-                              <BoltIcon
-                                className={`w-3.5 h-3.5 flex-shrink-0 ${
-                                  isYellow ? 'text-gold-500' : 'text-sky-400'
-                                }`}
-                              />
-                              <span className="text-white font-body">{p}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="p-7 text-center">
+                          <div className="text-stadium text-4xl md:text-5xl text-white leading-none">
+                            {size}
+                          </div>
+                          <div className="mt-2 text-white/50 font-accent uppercase tracking-wider text-xs">
+                            Players Rostered
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   );
                 })}
               </div>
 
-              <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-                <a
-                  href={ROSTER_GRAPHIC_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
-                >
-                  <BoltIcon className="w-4 h-4" />
-                  View Roster Graphic
-                </a>
-                <a
-                  href={ROSTER_GRAPHIC_URL}
-                  download={`Louisville Lightning Baseball Club ${SEASON_SLUG} Rosters.png`}
-                  className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2"
-                >
-                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download to Share
-                </a>
-              </div>
+              <p className="mt-8 text-white/50 text-sm max-w-xl mx-auto">
+                Rostered families have been contacted directly. Questions about
+                a roster spot can go to the coach for that team below.
+              </p>
             </motion.div>
           </section>
         ) : (

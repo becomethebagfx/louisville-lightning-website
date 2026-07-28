@@ -11,19 +11,12 @@ import {
 const LEGACY_STORAGE_KEY = 'lightning-roster'
 const storageKey = (team: TeamKey) => `lightning-roster-${team}`
 
-const DEFAULT_ROSTER: Player[] = [
-  { id: 'player-micah', name: 'Micah Davis', number: '0', songName: '' },
-  { id: 'player-mason', name: 'Mason Schechter', number: '1', songName: '' },
-  { id: 'player-grayson', name: 'Grayson Abramson', number: '4', songName: '' },
-  { id: 'player-cooper', name: 'Cooper Lindig', number: '6', songName: '' },
-  { id: 'player-beau', name: 'Beau Kerins', number: '8', songName: '' },
-  { id: 'player-colt', name: 'Colt Quesenberry', number: '9', songName: '' },
-  { id: 'player-grant', name: 'Grant Churchman', number: '10', songName: '' },
-  { id: 'player-kash-k', name: 'Kash Kittel', number: '23', songName: '' },
-  { id: 'player-elijah', name: 'Elijah Hayman', number: '25', songName: '' },
-  { id: 'player-kash-d', name: 'Kash Deacon', number: '29', songName: '' },
-  { id: 'player-reid', name: 'Reid Morrison', number: '43', songName: '' },
-]
+// DELIBERATE: no player names are seeded here. These are minors and this
+// repository is public, so hard-coded names ship inside the JS bundle and are
+// readable on GitHub. Coaches add their own players in the app, and those stay
+// in that device's localStorage. Rosters already saved on a device are
+// untouched: loadLocal() returns stored data before it ever reaches this list.
+const DEFAULT_ROSTER: Player[] = []
 
 function loadLocal(team: TeamKey): Player[] {
   try {
