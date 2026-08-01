@@ -7,6 +7,8 @@ import {
   LIGHTNING_TEAMS,
   TRYOUTS_COMPLETE,
   SEASON_YEAR,
+  OPEN_TRYOUT_GROUPS,
+  OPEN_AGE_LABEL,
 } from '../lib/tryoutData';
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -51,7 +53,9 @@ export default function RegisterPage() {
           >
             {TRYOUTS_COMPLETE
               ? 'Thank you to every family who came out and tried out.'
-              : 'Complete the information sheet and waiver below. One form per player. You will get an email copy when you submit.'}
+              : TRYOUT_FORM_URL
+                ? 'Complete the information sheet and waiver below. One form per player. You will get an email copy when you submit.'
+                : `${OPEN_AGE_LABEL} tryouts are open. RSVP straight to the coach and we will see you at the field.`}
           </motion.p>
 
           <motion.p
@@ -100,6 +104,32 @@ export default function RegisterPage() {
                   className="btn-lightning text-sm inline-flex items-center gap-2 mt-6"
                 >
                   See the {SEASON_YEAR} Rosters
+                </Link>
+              </div>
+            ) : OPEN_TRYOUT_GROUPS.length > 0 ? (
+              <div className="text-center">
+                <p className="text-white/70 text-lg font-body">
+                  There is no online form this round. RSVP directly with the
+                  coach for your age group.
+                </p>
+                <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+                  {OPEN_TRYOUT_GROUPS.map((g) => (
+                    <a
+                      key={g.ageGroup}
+                      href={`sms:${g.contactPhoneRaw}?body=${encodeURIComponent(
+                        `Hi ${g.contactName.split(' ')[0]}! I'd like to RSVP for Louisville Lightning ${g.ageGroup} tryouts.`
+                      )}`}
+                      className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
+                    >
+                      Text {g.contactName.split(' ')[0]} to RSVP ({g.ageGroup})
+                    </a>
+                  ))}
+                </div>
+                <Link
+                  to="/tryouts"
+                  className="btn-lightning-outline text-sm inline-flex items-center gap-2 mt-4"
+                >
+                  See dates and details
                 </Link>
               </div>
             ) : (

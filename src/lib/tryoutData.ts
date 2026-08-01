@@ -16,22 +16,40 @@ export interface TryoutGroup {
   contactRole: string;
   contactPhonePretty: string; // for display
   contactPhoneRaw: string; // for tel:/sms: links
+  // Whether THIS age group has finished its tryouts. Season state is per
+  // group, not global: 8U rosters are set while 7U is still recruiting.
+  complete: boolean;
+  // Shown when a group takes RSVPs by text instead of a form.
+  rsvpNote?: string;
 }
 
 // ------------------------------------------------------------
 // SEASON STATE
-// Flip TRYOUTS_COMPLETE back to false (and restore TRYOUT_FORM_URL)
-// when the next tryout cycle opens. Every surface reads this flag:
-// hero banner, navbar, footer, schedule block, /tryouts, /register.
-// ------------------------------------------------------------
 // SEASON_YEAR is display copy and contains a slash, so anything that becomes a
 // filename must use SEASON_SLUG instead.
+// ------------------------------------------------------------
 export const SEASON_YEAR = '2026 / 2027';
 export const SEASON_SLUG = '2026-2027';
-export const TRYOUTS_COMPLETE = true;
 export const CLUB_NAME = 'Louisville Lightning Baseball Club';
 
+// Open groups come first so the page leads with what people can still act on.
 export const TRYOUT_GROUPS: TryoutGroup[] = [
+  {
+    ageGroup: '7U',
+    sessions: [
+      { weekday: 'Sunday', date: 'August 9' },
+      { weekday: 'Sunday', date: 'August 16' },
+    ],
+    time: '12:00 to 2:00 PM',
+    ageRule: 'Players cannot turn 8 before May 1, 2027',
+    bornCutoff: 'Born on or after May 1, 2019',
+    contactName: 'Geoff Novak',
+    contactRole: '7U Contact',
+    contactPhonePretty: '502.938.5388',
+    contactPhoneRaw: '5029385388',
+    complete: false,
+    rsvpNote: 'Please RSVP by messaging Geoff.',
+  },
   {
     ageGroup: '8U',
     sessions: [
@@ -45,15 +63,26 @@ export const TRYOUT_GROUPS: TryoutGroup[] = [
     contactRole: '8U Contact',
     contactPhonePretty: '502.299.1804',
     contactPhoneRaw: '5022991804',
+    complete: true,
   },
 ];
+
+// Derived, so adding or closing a group updates every surface on its own.
+export const OPEN_TRYOUT_GROUPS = TRYOUT_GROUPS.filter((g) => !g.complete);
+export const TRYOUTS_COMPLETE = OPEN_TRYOUT_GROUPS.length === 0;
+// e.g. "7U" today, "7U + 9U" if two groups open at once.
+export const OPEN_AGE_LABEL = OPEN_TRYOUT_GROUPS.map((g) => g.ageGroup).join(' + ');
+// True once any group has finished, so the roster section survives a new
+// age group reopening tryouts.
+export const HAS_ROSTERS = TRYOUT_GROUPS.some((g) => g.complete);
 
 // Google Form: "Louisville Lightning Tryout Information Sheet and Waiver".
 // Responses flow to the "Louisville Lightning Tryout Signups 2026" Google
 // Sheet on loulightningclub@gmail.com. Embedded on /register; set to '' to
 // hide every registration CTA and the page content.
-// 2026 tryouts are complete, so registration is closed everywhere. The live
-// form URL is kept here (commented) so next season is a one-line restore.
+// No form is in use right now: 7U takes RSVPs by text to its contact, and 8U
+// is already rostered. Restoring the URL below re-enables every registration
+// CTA and the embedded form on /register.
 // 'https://docs.google.com/forms/d/e/1FAIpQLSdyTg5jwOh_UlYRFllwELdF7VL5TuOo_gEUiY3De5SEb-Sfxw/viewform'
 export const TRYOUT_FORM_URL = '';
 

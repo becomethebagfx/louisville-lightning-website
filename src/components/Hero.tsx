@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TRYOUTS_COMPLETE, SEASON_YEAR } from '../lib/tryoutData';
+import { TRYOUTS_COMPLETE, SEASON_YEAR, OPEN_AGE_LABEL } from '../lib/tryoutData';
 
 export default function Hero() {
   return (
@@ -51,7 +51,7 @@ export default function Hero() {
             <span className="text-gold-400 group-hover:text-gold-300 font-accent uppercase tracking-[0.15em] text-sm md:text-base">
               {TRYOUTS_COMPLETE
                 ? `${SEASON_YEAR} Rosters Announced`
-                : 'Now Recruiting · 8U'}
+                : `Now Recruiting · ${OPEN_AGE_LABEL}`}
             </span>
             <svg aria-hidden="true" className="w-4 h-4 text-gold-400 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -80,7 +80,7 @@ export default function Hero() {
             to="/tryouts"
             className="btn-lightning text-lg inline-flex items-center justify-center gap-2"
           >
-            {TRYOUTS_COMPLETE ? `${SEASON_YEAR} Rosters` : 'Tryout Info'}
+            {TRYOUTS_COMPLETE ? `${SEASON_YEAR} Rosters` : `${OPEN_AGE_LABEL} Tryout Info`}
             <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>

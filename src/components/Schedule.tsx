@@ -10,6 +10,8 @@ import {
   TRYOUTS_COMPLETE,
   SEASON_YEAR,
   ROSTER_SIZES,
+  OPEN_AGE_LABEL,
+  OPEN_TRYOUT_GROUPS,
 } from '../lib/tryoutData';
 
 // Head coaches derive from LIGHTNING_TEAMS; assistants have no home in
@@ -44,7 +46,7 @@ export default function Schedule() {
           className="text-center mb-16"
         >
           <span className="text-gold-500 font-accent uppercase tracking-[0.2em] text-sm">
-            {TRYOUTS_COMPLETE ? `${SEASON_YEAR} Season · 8U` : 'Now Recruiting · 8U'}
+            {TRYOUTS_COMPLETE ? `${SEASON_YEAR} Season` : `Now Recruiting · ${OPEN_AGE_LABEL}`}
           </span>
           <h2 className="text-stadium text-4xl md:text-6xl mt-4">
             <span className="text-white">THE</span>{' '}
@@ -94,23 +96,37 @@ export default function Schedule() {
                 </>
               ) : (
                 <>
+                  {/* Only groups still recruiting: a finished group's dates
+                      have already passed and would read as upcoming. */}
                   <div className="space-y-3">
-                    {TRYOUT_GROUPS.map((g) => (
+                    {OPEN_TRYOUT_GROUPS.map((g) => (
                       <div
                         key={g.ageGroup}
-                        className="flex items-center justify-center gap-4 text-white/80"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4 text-white/80"
                       >
-                        <span className="text-gold-500 font-accent font-bold w-12 text-right">{g.ageGroup}</span>
-                        <span className="text-white/30">|</span>
-                        <span className="w-48 text-left">
-                          {g.sessions.map((s) => (s.weekday ? `${s.weekday}, ${s.date}` : s.date)).join(' & ')}
+                        <span className="text-gold-500 font-accent font-bold sm:w-12 sm:text-right">
+                          {g.ageGroup}
+                        </span>
+                        <span className="text-white/30 hidden sm:inline">|</span>
+                        <span className="sm:w-56 sm:text-left text-center">
+                          {g.sessions
+                            .map((s) => (s.weekday ? `${s.weekday}, ${s.date}` : s.date))
+                            .join(' & ')}
+                          <span className="block text-white/50 text-sm">{g.time}</span>
                         </span>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-4 text-white/50 text-sm text-center">
-                    Tryouts run 4:00 to 6:00 PM.
-                  </p>
+                  {/* Groups already rostered still get a line so the page does
+                      not look like 8U vanished. */}
+                  {TRYOUT_GROUPS.filter((g) => g.complete).map((g) => (
+                    <p
+                      key={g.ageGroup}
+                      className="mt-4 text-white/50 text-sm text-center"
+                    >
+                      {g.ageGroup} tryouts are complete and rosters are set.
+                    </p>
+                  ))}
                 </>
               )}
             </div>

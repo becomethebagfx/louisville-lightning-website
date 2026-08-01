@@ -11,6 +11,7 @@ import {
   TRYOUTS_COMPLETE,
   SEASON_YEAR,
   ROSTER_SIZES,
+  HAS_ROSTERS,
 } from '../lib/tryoutData';
 
 const fadeUp = {
@@ -20,8 +21,6 @@ const fadeUp = {
 };
 
 const ease = [0.16, 1, 0.3, 1] as const;
-
-const PARENT_HANDOUT_URL = '/lightning-tryout-schedule.pdf';
 
 function BoltIcon({ className }: { className?: string }) {
   return (
@@ -134,14 +133,14 @@ export default function TryoutsPage() {
                       {g.ageGroup}
                     </span>
                     <span className="text-white/60 font-accent uppercase tracking-wider text-sm">
-                      {TRYOUTS_COMPLETE
+                      {g.complete
                         ? `${SEASON_YEAR} Season`
                         : `Tryout${g.sessions.length > 1 ? 's' : ''}`}
                     </span>
                   </div>
 
-                  {/* Sessions, or the closed-season notice */}
-                  {TRYOUTS_COMPLETE ? (
+                  {/* Sessions, or the closed-season notice, per age group */}
+                  {g.complete ? (
                     <div className="mt-6 border-l-2 border-gold-500/60 pl-4 py-1">
                       <div className="font-accent uppercase tracking-wide text-lg text-white">
                         Tryouts Complete
@@ -170,6 +169,11 @@ export default function TryoutsPage() {
                           )}
                         </div>
                       ))}
+                      {g.rsvpNote && (
+                        <p className="pl-4 pt-1 text-gold-500/90 text-sm font-accent">
+                          {g.rsvpNote}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -190,7 +194,7 @@ export default function TryoutsPage() {
                     <div className="mt-3 flex flex-col sm:flex-row gap-3">
                       <a
                         href={`sms:${g.contactPhoneRaw}?body=${encodeURIComponent(
-                          TRYOUTS_COMPLETE
+                          g.complete
                             ? `Hi! I have a question about Louisville Lightning ${g.ageGroup}.`
                             : `Hi! I'm interested in Louisville Lightning ${g.ageGroup} tryouts.`
                         )}`}
@@ -218,8 +222,9 @@ export default function TryoutsPage() {
           </div>
         </section>
 
-        {/* Rosters (season complete) or tryout schedule handout (season open) */}
-        {TRYOUTS_COMPLETE ? (
+        {/* Rosters. Shown whenever a group has finished, independent of
+            whether another age group is still holding tryouts. */}
+        {HAS_ROSTERS && (
           <section className="relative bg-navy-900 pt-6 pb-8 px-4">
             <motion.div
               {...fadeUp}
@@ -278,74 +283,12 @@ export default function TryoutsPage() {
               </p>
             </motion.div>
           </section>
-        ) : (
-          <section className="relative bg-navy-900 pt-6 pb-8 px-4">
-            <motion.div
-              {...fadeUp}
-              transition={{ duration: 0.8, ease }}
-              className="max-w-3xl mx-auto text-center"
-            >
-              <h2 className="text-stadium text-3xl md:text-4xl">
-                <span className="text-white">TRYOUT</span>{' '}
-                <span className="text-gradient-gold">SCHEDULE</span>
-              </h2>
-              <p className="mt-3 text-white/60 max-w-2xl mx-auto">
-                See how the two hour tryout runs, station by station, so you know what
-                to expect. Print it or save it to your phone for the day.
-              </p>
-
-              <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
-                <a
-                  href={PARENT_HANDOUT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-lightning text-sm inline-flex items-center justify-center gap-2"
-                >
-                  <BoltIcon className="w-4 h-4" />
-                  View Schedule
-                </a>
-                <a
-                  href={PARENT_HANDOUT_URL}
-                  download="Louisville Lightning Tryout Schedule.pdf"
-                  className="btn-lightning-outline text-sm inline-flex items-center justify-center gap-2"
-                >
-                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download PDF
-                </a>
-              </div>
-
-              {/* Embedded preview (best on desktop; mobile users use the buttons above) */}
-              <div className="mt-8 card-electric rounded-lg p-1 sm:p-2 overflow-hidden">
-                <object
-                  data={`${PARENT_HANDOUT_URL}#view=FitH`}
-                  type="application/pdf"
-                  aria-label="Louisville Lightning tryout schedule"
-                  className="w-full rounded-md bg-white h-[560px] sm:h-[720px] md:h-[900px]"
-                >
-                  <div className="p-8 text-center bg-white rounded-md">
-                    <p className="text-navy-800 font-body">
-                      Your browser can&apos;t preview the PDF here.
-                    </p>
-                    <a
-                      href={PARENT_HANDOUT_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-navy-700 underline underline-offset-2 font-semibold"
-                    >
-                      Open the tryout schedule
-                    </a>
-                  </div>
-                </object>
-              </div>
-            </motion.div>
-          </section>
         )}
 
-        {/* Two teams: registration-season explainer. Once the season's rosters
-            are posted the section above already names both teams and coaches. */}
-        {!TRYOUTS_COMPLETE && (
+        {/* Two teams: registration-season explainer. Once rosters exist the
+            section above already names both teams and coaches, so this would
+            just repeat it with stale "when you register" copy. */}
+        {!HAS_ROSTERS && (
         <section className="relative bg-navy-900 pt-8 pb-4 px-4">
           <motion.div
             {...fadeUp}
