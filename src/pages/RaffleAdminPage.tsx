@@ -1279,6 +1279,42 @@ export default function RaffleAdminPage() {
                     : ''}
                 </div>
               )}
+              {/* The whole point of the next five minutes is reaching this
+                  person. Their real name and number are already loaded on
+                  winnerEntry; not rendering them here sent the coach back to
+                  scroll a list of forty cards looking for the ticket he is
+                  staring at. */}
+              {winnerEntry && (winnerEntry.fullName || winnerEntry.phone) && (
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <div className={LABEL}>Call the winner</div>
+                  {winnerEntry.fullName && (
+                    <div className="text-white text-base mt-1 break-words">
+                      {winnerEntry.fullName}
+                    </div>
+                  )}
+                  {winnerEntry.phone && (
+                    <div className="mt-2 flex flex-wrap justify-center gap-2">
+                      <a
+                        href={`tel:${winnerEntry.phone.replace(/[^\d+]/g, '')}`}
+                        className={`${SMALL_BTN} bg-gold-500 text-navy-900 hover:bg-gold-400`}
+                      >
+                        Call {winnerEntry.phone}
+                      </a>
+                      <a
+                        href={`sms:${winnerEntry.phone.replace(/[^\d+]/g, '')}`}
+                        className={SMALL_GHOST}
+                      >
+                        Text
+                      </a>
+                    </div>
+                  )}
+                  {winnerEntry.venmoHandle && (
+                    <div className="text-white/40 text-xs mt-2 break-all">
+                      {prettyHandle(winnerEntry.venmoHandle)}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <>

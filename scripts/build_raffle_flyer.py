@@ -75,11 +75,12 @@ BAND_TOP, BAND_H = 905, 188
 PANEL_COVER = 100          # strip of the photo panel that the band hides
 GLOVE_PAD = 24             # minimum clear canvas px around the glove
 PRIZE_TOP, PRIZE_H = 1101, 42
-SPEC_TOP, SPEC_H = 1149, 28   # size + model, read off the thumb stamp
-DRAW_TOP, DRAW_H = 1183, 60
-HAIRLINE_TOP = 1253
-SCAN_TOP, SCAN_H = 1265, 44
-QR_TOP = 1319
+SPEC_TOP, SPEC_H = 1147, 24   # size + model, read off the thumb stamp
+DRAW_TOP, DRAW_H = 1176, 54
+DEADLINE_TOP, DEADLINE_H = 1234, 22   # entries close date, under the drawing
+HAIRLINE_TOP = 1262
+SCAN_TOP, SCAN_H = 1269, 40
+QR_TOP = 1316
 URL_TOP, URL_H = 1806, 40
 CONTACT_TOP, CONTACT_H = 1858, 32
 
@@ -109,6 +110,7 @@ class RaffleFacts:
     prize_spec: str
     price_label: str
     draw_date_label: str
+    entries_close_label: str
     url_full: str
     url_display: str
     qr_path: Path
@@ -167,6 +169,8 @@ def read_facts() -> RaffleFacts:
         price_label=format_usd(cents),
         draw_date_label=_grab(r"export const DRAW_DATE_LABEL\s*=\s*'([^']+)'", src,
                               "DRAW_DATE_LABEL"),
+        entries_close_label=_grab(r"export const ENTRIES_CLOSE_LABEL\s*=\s*'([^']+)'", src,
+                                  "ENTRIES_CLOSE_LABEL"),
         url_full=url_full,
         url_display=re.sub(r"^https?://", "", url_full).rstrip("/"),
         qr_path=PUBLIC / qr_rel.lstrip("/"),
@@ -467,6 +471,14 @@ def build() -> tuple[RaffleFacts, list[str], tuple[float, float, float, float]]:
           top=DRAW_TOP + (date.height - word.height) // 2)
     place(canvas, date, "drawing-date", left=left + word.width + gap, top=DRAW_TOP)
 
+    # The one date the flyer was missing. "Drawing October 1st" tells somebody
+    # when they find out, not when they have to act by, and those are 19 hours
+    # apart. Small and muted: it is a deadline, not the headline.
+    deadline = fit_line(s(f"ENTER BY {facts.entries_close_label.upper()}"),
+                        DISPLAY, MUTED, max_w=740, max_h=DEADLINE_H,
+                        tracking_ratio=0.07, start=54)
+    place(canvas, deadline, "deadline", center_x=W // 2, top=DEADLINE_TOP)
+
     hairline(canvas, HAIRLINE_TOP, 300)
 
     # ---------- one code, one action ----------
@@ -588,6 +600,7 @@ def verify(facts: RaffleFacts, strings: list[str],
     print(f"  prize       {facts.prize_name}")
     print(f"  spec        {facts.prize_spec or '(none set)'}")
     print(f"  drawing     {poster_case(facts.draw_date_label)}")
+    print(f"  enter by    {facts.entries_close_label}")
     print(f"  url         {facts.url_display}   ({facts.url_full})")
     print(f"  contact     {facts.contact_role} {facts.contact_name} {facts.contact_phone}")
     print("-" * 64)
