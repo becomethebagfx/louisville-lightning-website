@@ -4,6 +4,37 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/assets/logo-transparent.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!--
+      ROBOTS: conditional ON PURPOSE. Do not "simplify" this into a plain
+      <meta name="robots" content="noindex"> sitting in this head.
+
+      This site is a single page app. Every route (/, /tryouts, /walkup,
+      /raffle, ...) is served this exact same index.html, so one static
+      noindex tag here would delist the ENTIRE site, not just the raffle.
+
+      Only the raffle is unlisted: it goes out by text message, it is not in
+      the Navbar, and it should not turn up in a search for the club. So the
+      tag is added at runtime, from the URL, and only for the raffle paths.
+
+      This inline classic script runs while the head is parsed, before paint
+      and before the app bundle, so the tag is in the DOM before a rendering
+      crawler takes its snapshot.
+
+      The regex matches /raffle and /raffle/anything, never /raffle-recap or
+      similar. That matters: an unknown path gets bounced to "/" by the
+      router's catch-all, and a looser prefix test would carry noindex onto
+      the home page for that render.
+    -->
+    <script>
+      if (/^\/raffle(\/|$)/.test(location.pathname)) {
+        var robotsMeta = document.createElement('meta');
+        robotsMeta.name = 'robots';
+        robotsMeta.content = 'noindex, nofollow';
+        document.head.appendChild(robotsMeta);
+      }
+    </script>
+
     <meta name="description" content="Louisville Lightning Baseball Club - Elite youth baseball in Louisville, Kentucky. Building champions on and off the field." />
     <meta name="keywords" content="Louisville Lightning, baseball, travel baseball, youth baseball, Louisville Kentucky, USSSA, Kentucky Select" />
     <meta property="og:title" content="Louisville Lightning Baseball Club" />
