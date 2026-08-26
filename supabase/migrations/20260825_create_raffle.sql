@@ -1,4 +1,70 @@
 -- ============================================================
+-- !! SUPERSEDED IN PART - READ THIS BEFORE TRUSTING ANYTHING BELOW !!
+--
+-- This file is the raffle schema AS ORIGINALLY SHIPPED. It is still the
+-- correct starting point (it creates every table, index, grant, policy
+-- and function), but on its own it is NO LONGER an accurate description
+-- of the live database.
+--
+-- A later migration, supabase/migrations/20260825b_raffle_hardening.sql,
+-- written after four adversarial reviews, REPLACES several of the objects
+-- defined below. Read BOTH files, in filename order, or you will walk away
+-- with a wrong picture of production.
+--
+-- What that hardening migration changed:
+--
+--   raffle_draws  (table)                                      [ALTERED]
+--     Gains column  seed_available_at timestamptz not null  - the instant
+--     the named seed drawing publishes, and therefore the LAST moment the
+--     entry list may legitimately be frozen. Gains constraint
+--     raffle_seed_after_close  check (seed_available_at > entries_close_at).
+--     The column mirrors SEED_AVAILABLE_AT in src/lib/raffleData.ts.
+--
+--   raffle_verify_entry(uuid, text)                           [REPLACED]
+--     The deployed version reads raffle_draws.status under the same
+--     FOR UPDATE lock it already takes to serialise, and refuses to mint
+--     tickets unless the draw is still 'open'. The version below has no
+--     draw-status guard at all, so it would happily issue a ticket into a
+--     pool that was already frozen and hashed.
+--
+--   raffle_freeze(text)                                       [REPLACED]
+--     The deployed version locks the draw row FIRST, before aggregating a
+--     single entry (the version below aggregates, then updates, leaving a
+--     window in which a verify commits onto the public board but outside
+--     the published fingerprint). It also refuses to freeze at or after
+--     seed_available_at, because sealing the list once the winning number
+--     is already public makes the draw unprovable; it refuses a list whose
+--     display names carry delimiter characters; and it hashes a VERSIONED
+--     preimage ('lightning-raffle/v1' plus draw_id, ticket count and
+--     seed_source) rather than the bare ticket/name list below. The two
+--     versions therefore produce different hashes, deliberately.
+--
+--   raffle_execute_draw(text, text, text)                     [REPLACED]
+--     The deployed version locks the frozen draw row, requires
+--     p_seed_source to match the seed_source the draw already committed to
+--     (it no longer overwrites that column), requires frozen_at to be
+--     strictly before seed_available_at, refuses to draw before the seed
+--     publishes, and rejects an empty seed value.
+--
+--   policy "anyone may enter an open raffle" on raffle_entries [REPLACED]
+--     The deployed version keeps every check below and adds
+--     display_name !~ '[|<>[:cntrl:]]'  and  full_name !~ '[[:cntrl:]]',
+--     because a display name carrying a pipe or a newline can forge extra
+--     rows inside the freeze preimage.
+--
+-- NOT touched by the hardening migration, so the definitions below are
+-- still current: the raffle_entries table and its constraints, every
+-- index, the raffle_board view, raffle_stats(), raffle_receipt(), the
+-- draws SELECT policy, and the entries SELECT policy with its column
+-- grant. (The hardening migration does re-issue the anon INSERT column
+-- grant and the three service_role EXECUTE grants verbatim - identical,
+-- not altered.)
+--
+-- Every superseded object below carries its own SUPERSEDED pointer, so
+-- nobody scrolling straight to one of them can miss this.
+-- ============================================================
+
+-- ============================================================
 -- LOUISVILLE LIGHTNING - RAFFLE LEDGER
 -- Mirrors src/lib/raffleData.ts. Change one, change the other.
 --
@@ -19,6 +85,9 @@ create extension if not exists pgcrypto with schema extensions;
 -- ------------------------------------------------------------
 -- draws
 -- ------------------------------------------------------------
+-- >> SUPERSEDED IN PART by 20260825b_raffle_hardening.sql: the live table
+-- >> also has column seed_available_at (timestamptz not null) and constraint
+-- >> raffle_seed_after_close (seed_available_at > entries_close_at).
 create table if not exists raffle_draws (
   id                  text primary key,
   title               text        not null,
@@ -131,6 +200,9 @@ grant insert (
   phone, email, chances, amount_cents, venmo_handle, note
 ) on raffle_entries to anon, authenticated;
 
+-- >> SUPERSEDED by 20260825b_raffle_hardening.sql: the deployed policy adds
+-- >> display_name !~ '[|<>[:cntrl:]]' and full_name !~ '[[:cntrl:]]', so a
+-- >> pipe or newline in a name cannot forge rows inside the freeze preimage.
 drop policy if exists "anyone may enter an open raffle" on raffle_entries;
 create policy "anyone may enter an open raffle"
   on raffle_entries for insert
@@ -237,6 +309,9 @@ grant execute on function raffle_receipt(text) to anon, authenticated;
 -- Assign the next contiguous ticket block. The row lock on the draw
 -- serialises concurrent verifications, so two entries can never be
 -- handed the same number even if Aaron double-taps the button.
+-- >> SUPERSEDED by 20260825b_raffle_hardening.sql: the deployed function also
+-- >> reads the draw's status under that same lock and refuses to issue tickets
+-- >> unless the draw is still 'open'. The version below has no such guard.
 create or replace function raffle_verify_entry(
   p_entry_id uuid,
   p_verifier text
@@ -287,6 +362,11 @@ $$;
 -- Freeze the pool and publish its fingerprint. After this runs, any
 -- edit to any verified entry changes the hash and is detectable by
 -- anyone who saved the published list.
+-- >> SUPERSEDED by 20260825b_raffle_hardening.sql: the deployed function locks
+-- >> the draw row before reading any entry, refuses to freeze once the seed is
+-- >> public (at or after seed_available_at), rejects delimiter characters in
+-- >> display names, and hashes a versioned preimage that also covers draw_id,
+-- >> the ticket count and seed_source. Its hashes differ from this version's.
 create or replace function raffle_freeze(p_draw_id text)
 returns table (list_sha256 text, ticket_count integer)
 language plpgsql
@@ -331,6 +411,10 @@ $$;
 -- The draw. winning_ticket is a pure function of the public seed and
 -- the frozen ticket count, so anyone can recompute it by hand.
 --   winner = 1 + (sha256(seed) as integer  mod  ticket_count)
+-- >> SUPERSEDED by 20260825b_raffle_hardening.sql: the deployed function locks
+-- >> the frozen row, requires p_seed_source to equal the committed seed_source
+-- >> (and no longer overwrites it), requires frozen_at < seed_available_at,
+-- >> refuses to draw before the seed publishes, and rejects an empty seed.
 create or replace function raffle_execute_draw(
   p_draw_id     text,
   p_seed_source text,
@@ -390,6 +474,11 @@ grant  execute on function raffle_execute_draw(text, text, text)  to service_rol
 -- ============================================================
 -- SEED THE DRAW
 -- ============================================================
+-- >> Applied in filename order, this INSERT runs BEFORE seed_available_at
+-- >> exists; 20260825b_raffle_hardening.sql then backfills this row and makes
+-- >> that column NOT NULL. The seed instant lives there and in
+-- >> SEED_AVAILABLE_AT (src/lib/raffleData.ts), not here. Re-running this file
+-- >> alone is a no-op while the row exists, which is the intended behaviour.
 insert into raffle_draws (id, title, entries_close_at, draw_at, seed_source)
 values (
   'glove-2026-10-01',

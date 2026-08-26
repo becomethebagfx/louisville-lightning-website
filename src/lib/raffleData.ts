@@ -39,6 +39,15 @@ export const MAX_CHANCES_PER_ENTRY = 100;
 /** Entries close the night before. ET, expressed as a real UTC instant. */
 export const ENTRIES_CLOSE_AT = '2026-10-01T03:59:00Z'; // Sep 30 11:59pm ET
 export const DRAW_AT = '2026-10-01T23:00:00Z';          // Oct 1  7:00pm ET
+/**
+ * When the seed drawing publishes, and therefore the LAST moment the entry
+ * list can legitimately be frozen. Mirrors raffle_draws.seed_available_at,
+ * which enforces it: the database refuses a freeze at or after this instant.
+ * The coach's console must show this, not the draw time. They are 5h40m apart.
+ */
+export const SEED_AVAILABLE_AT = '2026-10-01T17:20:00Z'; // Oct 1 1:20pm ET
+export const FREEZE_DEADLINE_LABEL = 'October 1 at 1:20pm ET';
+
 export const DRAW_DATE_LABEL = 'October 1st';
 export const ENTRIES_CLOSE_LABEL = 'September 30 at 11:59pm ET';
 export const DRAW_TIME_LABEL = 'October 1 at 7:00pm ET';
@@ -80,6 +89,7 @@ export const RAFFLE_RULES: readonly string[] = [
   `Ticket numbers are assigned in the order payments are confirmed, starting at #1. Nothing is skipped and nothing is held back.`,
   `Entries close ${ENTRIES_CLOSE_LABEL}. The full numbered list is then frozen and its fingerprint published on this page, and that happens before the ${SEED_SOURCE_LABEL} takes place. The database refuses to freeze the list once that number exists, so the list provably cannot be arranged around the answer.`,
   `The drawing is ${DRAW_TIME_LABEL} and is recorded, and the video is posted on this page afterwards. The winning number comes from the ${SEED_SOURCE_LABEL}, a public number nobody involved with the team controls, so anyone can check the math themselves.`,
+  `Made a mistake on your entry? Do not submit it again, that just creates a second entry. Text Coach ${RAFFLE_CONTACT.name.split(' ')[0]} your receipt code and he will fix it.`,
   `Only your first name and last initial appear publicly. Your phone number and the rest of your information are never shown on this page.`,
   `The winner is posted here and contacted directly. Questions go to Coach ${RAFFLE_CONTACT.name}, ${RAFFLE_CONTACT.phone}.`,
 ];

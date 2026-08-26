@@ -30,6 +30,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   DRAW_ID,
   SEED_SOURCE_LABEL,
+  SEED_AVAILABLE_AT,
+  FREEZE_DEADLINE_LABEL,
   VENMO,
   PRICE_PER_CHANCE_CENTS,
   DRAW_TIME_LABEL,
@@ -50,6 +52,28 @@ const ADMIN_ENDPOINT = `${SUPABASE_URL}/functions/v1/raffle-admin`;
    nothing on the raffle tables. It exists here only to clear the edge
    gateway's JWT check. It is NOT the admin credential. */
 const ANON_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY ?? '');
+
+/* ------------------------------------------------------------
+   THE REAL CLOCK.
+
+   The deadline that matters in this console is NOT the drawing.
+   raffle_freeze refuses to seal the list from seed_available_at
+   onwards, because the seed drawing publishes then and a list
+   sealed after the winning number exists proves nothing. That is
+   5h40m before the drawing this page names. A coach who works to
+   the drawing time misses the freeze and the raffle cannot be
+   drawn at all, so the console works to THIS instant.
+   ------------------------------------------------------------ */
+const FREEZE_DEADLINE_MS = new Date(SEED_AVAILABLE_AT).getTime();
+
+/** How often the console re-checks the wall clock against that deadline. */
+const CLOCK_TICK_MS = 30_000;
+
+/* Error scopes. Entry-level errors are keyed by the entry's own id, so these
+   three carry a prefix no UUID can collide with. */
+const SCOPE_FREEZE = 'panel:freeze';
+const SCOPE_DRAW = 'panel:draw';
+const SCOPE_VIDEO = 'panel:video';
 
 /* ------------------------------------------------------------
    Tiny, total JSON readers. The edge function is owned by another
@@ -264,6 +288,29 @@ function prettyHandle(raw: string): string {
   return `@${handle}`;
 }
 
+/** Mirrors the same check in the edge function, so a bad link fails here
+    instead of costing a round trip on a phone with one bar of signal. */
+function isHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+/** "3d 4h" / "4h 12m" / "12m". Coarse on purpose: the clock ticks every
+    30 seconds, so a seconds field would sit visibly wrong most of the time. */
+function formatTimeLeft(ms: number): string {
+  const minutes = Math.max(0, Math.floor(ms / 60_000));
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
 /* min-h is not decoration: this gets operated with a thumb, standing up,
    holding a phone in the other hand. 44px is the smallest honest target. */
 const SMALL_BTN =
@@ -283,6 +330,21 @@ function StatTile({ label, value, sub }: { label: string; value: string; sub: st
       <div className="text-stadium text-2xl text-white leading-none mt-0.5">{value}</div>
       <div className="text-white/45 text-[11px] leading-tight mt-0.5">{sub}</div>
     </div>
+  );
+}
+
+/* A failure has to appear where the thumb just was. This console scrolls for
+   pages, and a banner pinned to the top is invisible to somebody working the
+   fortieth pending entry. */
+function ErrorNote({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <p
+      role="alert"
+      className="mt-2 rounded border border-red-500/45 bg-red-950/50 px-2.5 py-2 text-red-200 text-xs leading-relaxed break-words"
+    >
+      {message}
+    </p>
   );
 }
 
@@ -349,7 +411,10 @@ export default function RaffleAdminPage() {
 
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [loadError, setLoadError] = useState('');
-  const [actionError, setActionError] = useState('');
+  /* Keyed by entry id for the entry cards, and by the SCOPE_* constants for
+     the three panels. Every failure paints beside the control that caused it;
+     the banner at the top of the page is for load level failures only. */
+  const [scopedErrors, setScopedErrors] = useState<Readonly<Record<string, string>>>({});
   const [entries, setEntries] = useState<AdminEntry[]>([]);
 
   const [drawStatus, setDrawStatus] = useState<DrawStatus | null>(null);
@@ -373,6 +438,31 @@ export default function RaffleAdminPage() {
   const [drawConfirm, setDrawConfirm] = useState('');
   const [drawBusy, setDrawBusy] = useState(false);
 
+  /* Publishing the recording. The public page promises every entrant this
+     video, and the edge function has always accepted it; nothing on this
+     screen ever called it. savedVideoUrl is whatever the draw row holds now,
+     read back out of the list response so a re-save shows what is already set. */
+  const [videoUrl, setVideoUrl] = useState('');
+  const [savedVideoUrl, setSavedVideoUrl] = useState('');
+  const [videoBusy, setVideoBusy] = useState(false);
+  const [videoJustSaved, setVideoJustSaved] = useState(false);
+  /* Refreshing must not overwrite a link the coach is halfway through typing. */
+  const videoTouched = useRef(false);
+
+  /* The freeze deadline is a wall clock fact, so the console has to notice it
+     passing without a reload. Coarse tick: this page can be rendering a hundred
+     entry cards and nothing here needs second resolution. */
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), CLOCK_TICK_MS);
+    return () => clearInterval(id);
+  }, []);
+  const msToFreezeDeadline = FREEZE_DEADLINE_MS - nowMs;
+  /* If the contract date ever failed to parse this is NaN, every comparison is
+     false, and the console leaves the freeze button alone rather than blocking
+     a freeze that would actually have worked. */
+  const freezeWindowPassed = msToFreezeDeadline <= 0;
+
   /* Synchronous latch. `disabled` repaints a frame too late to stop a
      genuine double tap, and a double verify would mint two ticket blocks. */
   const inFlight = useRef(false);
@@ -385,19 +475,37 @@ export default function RaffleAdminPage() {
     inFlight.current = false;
   }, []);
 
-  const handleFailure = useCallback((res: { error: string; unauthorized: boolean }) => {
-    if (res.unauthorized) {
-      setLoadState('unauthorized');
-      setLoadError(res.error);
-      return;
-    }
-    setActionError(res.error);
+  const noteError = useCallback((scope: string, message: string) => {
+    setScopedErrors((prev) => {
+      if (message) return { ...prev, [scope]: message };
+      if (!(scope in prev)) return prev;
+      return Object.fromEntries(Object.entries(prev).filter(([key]) => key !== scope));
+    });
   }, []);
+
+  /* A bad key is not a per card problem: it means every remaining tap will
+     fail the same way, so it still takes over the whole screen. */
+  const handleFailure = useCallback(
+    (scope: string, res: { error: string; unauthorized: boolean }) => {
+      if (res.unauthorized) {
+        setLoadState('unauthorized');
+        setLoadError(res.error);
+        return;
+      }
+      noteError(scope, res.error);
+    },
+    [noteError],
+  );
 
   const applyDraw = useCallback((raw: unknown) => {
     if (!isRecord(raw)) return;
     const status = readDrawStatus(raw);
     if (status) setDrawStatus(status);
+    /* Unlike the fields below, an empty video URL is real information: it means
+       nothing is published yet. Take it verbatim. */
+    const video = readString(raw, ['draw_video_url', 'drawVideoUrl', 'videoUrl', 'video_url']);
+    setSavedVideoUrl(video);
+    if (!videoTouched.current) setVideoUrl(video);
     const hash = readString(raw, ['frozen_list_sha256', 'frozenListSha256', 'list_sha256', 'listSha256']);
     if (hash) setFrozenHash(hash);
     const count = readNumber(raw, ['frozen_ticket_count', 'frozenTicketCount', 'ticket_count', 'ticketCount']);
@@ -413,7 +521,8 @@ export default function RaffleAdminPage() {
   const load = useCallback(async () => {
     if (!adminKey) return;
     const res = await postAdmin(adminKey, 'list', {});
-    setActionError('');
+    /* Fresh data, so every stale per card failure goes with it. */
+    setScopedErrors({});
     if (!res.ok) {
       setLoadState(res.unauthorized ? 'unauthorized' : 'error');
       setLoadError(res.error);
@@ -491,12 +600,12 @@ export default function RaffleAdminPage() {
     async (entry: AdminEntry) => {
       if (!claim()) return;
       setBusyId(entry.id);
-      setActionError('');
+      noteError(entry.id, '');
       const res = await postAdmin(adminKey, 'verify', { entryId: entry.id });
       setBusyId('');
       release();
       if (!res.ok) {
-        handleFailure(res);
+        handleFailure(entry.id, res);
         return;
       }
       const body = payloadOf(res.body);
@@ -514,24 +623,24 @@ export default function RaffleAdminPage() {
          do not guess: go and read the real row back. */
       if (start === null || end === null) void load();
     },
-    [adminKey, claim, release, handleFailure, load],
+    [adminKey, claim, release, handleFailure, noteError, load],
   );
 
   const runReject = useCallback(
     async (entry: AdminEntry) => {
       const reason = rejectReason.trim();
       if (!reason) {
-        setActionError('Give a short reason so the entrant sees why.');
+        noteError(entry.id, 'Give a short reason so the entrant sees why.');
         return;
       }
       if (!claim()) return;
       setBusyId(entry.id);
-      setActionError('');
+      noteError(entry.id, '');
       const res = await postAdmin(adminKey, 'reject', { entryId: entry.id, reason });
       setBusyId('');
       release();
       if (!res.ok) {
-        handleFailure(res);
+        handleFailure(entry.id, res);
         return;
       }
       setEntries((prev) =>
@@ -544,18 +653,18 @@ export default function RaffleAdminPage() {
       setRejectingId('');
       setRejectReason('');
     },
-    [adminKey, rejectReason, claim, release, handleFailure],
+    [adminKey, rejectReason, claim, release, handleFailure, noteError],
   );
 
   const runFreeze = useCallback(async () => {
     if (!claim()) return;
     setFreezeBusy(true);
-    setActionError('');
+    noteError(SCOPE_FREEZE, '');
     const res = await postAdmin(adminKey, 'freeze', {});
     setFreezeBusy(false);
     release();
     if (!res.ok) {
-      handleFailure(res);
+      handleFailure(SCOPE_FREEZE, res);
       return;
     }
     const body = payloadOf(res.body);
@@ -565,23 +674,23 @@ export default function RaffleAdminPage() {
     if (count !== null) setFrozenCount(count);
     setDrawStatus('frozen');
     setFreezeConfirm('');
-  }, [adminKey, claim, release, handleFailure]);
+  }, [adminKey, claim, release, handleFailure, noteError]);
 
   const runDraw = useCallback(async () => {
     const value = seedValue.trim();
     const source = seedSource.trim();
     if (!value) {
-      setActionError('Enter the public number before drawing.');
+      noteError(SCOPE_DRAW, 'Enter the public number before drawing.');
       return;
     }
     if (!claim()) return;
     setDrawBusy(true);
-    setActionError('');
+    noteError(SCOPE_DRAW, '');
     const res = await postAdmin(adminKey, 'draw', { seedSource: source, seedValue: value });
     setDrawBusy(false);
     release();
     if (!res.ok) {
-      handleFailure(res);
+      handleFailure(SCOPE_DRAW, res);
       return;
     }
     const body = payloadOf(res.body);
@@ -591,7 +700,35 @@ export default function RaffleAdminPage() {
     if (name) setWinnerName(name);
     setDrawStatus('drawn');
     setDrawConfirm('');
-  }, [adminKey, seedSource, seedValue, claim, release, handleFailure]);
+  }, [adminKey, seedSource, seedValue, claim, release, handleFailure, noteError]);
+
+  const runVideo = useCallback(async () => {
+    const url = videoUrl.trim();
+    /* The same check the edge function runs. Catching it here saves a round
+       trip and, more to the point, says what is wrong with the link. */
+    if (!isHttpUrl(url)) {
+      noteError(SCOPE_VIDEO, 'Paste the whole link, starting with https://');
+      return;
+    }
+    if (!claim()) return;
+    setVideoBusy(true);
+    setVideoJustSaved(false);
+    noteError(SCOPE_VIDEO, '');
+    const res = await postAdmin(adminKey, 'video', { videoUrl: url });
+    setVideoBusy(false);
+    release();
+    if (!res.ok) {
+      handleFailure(SCOPE_VIDEO, res);
+      return;
+    }
+    const body = payloadOf(res.body);
+    const saved = readString(body, ['videoUrl', 'video_url', 'draw_video_url']) || url;
+    setSavedVideoUrl(saved);
+    setVideoUrl(saved);
+    setVideoJustSaved(true);
+    /* Server and field agree again, so a later refresh may resync the field. */
+    videoTouched.current = false;
+  }, [adminKey, videoUrl, claim, release, handleFailure, noteError]);
 
   /* ---------- gates ---------- */
 
@@ -692,13 +829,22 @@ export default function RaffleAdminPage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-3 sm:px-5 pb-24">
+        {/* The three dates, in the order they actually happen. The middle one
+            is the one that ends the raffle if it is missed, so it is the one
+            wearing the colour. */}
         <p className="text-white/40 text-xs mt-3 leading-relaxed">
           Match each pending entry against the {VENMO.displayName} Venmo feed, then verify it. Entries
-          close {ENTRIES_CLOSE_LABEL}. Drawing is {DRAW_TIME_LABEL}.
+          close {ENTRIES_CLOSE_LABEL}.{' '}
+          <strong className="text-gold-400 font-semibold not-italic">
+            The list must be frozen by {FREEZE_DEADLINE_LABEL}.
+          </strong>{' '}
+          Drawing is {DRAW_TIME_LABEL}.
         </p>
 
+        {/* Load level only. Everything a button can go wrong with is painted
+            beside that button instead. */}
         <AnimatePresence>
-          {actionError && (
+          {loadState === 'error' && loadError && (
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -707,16 +853,10 @@ export default function RaffleAdminPage() {
               className="mt-3 rounded border border-red-500/40 bg-red-950/40 px-3 py-2.5 text-red-200 text-sm"
               role="alert"
             >
-              {actionError}
+              {loadError}
             </motion.div>
           )}
         </AnimatePresence>
-
-        {loadState === 'error' && (
-          <div className="mt-3 rounded border border-red-500/40 bg-red-950/40 px-3 py-2.5 text-red-200 text-sm">
-            {loadError}
-          </div>
-        )}
 
         {listBusy && entries.length === 0 && (
           <p className="mt-8 text-center text-white/40 font-accent uppercase tracking-widest text-sm">
@@ -745,6 +885,7 @@ export default function RaffleAdminPage() {
             {groups.pending.map((entry, index) => {
               const busy = busyId === entry.id;
               const rejecting = rejectingId === entry.id;
+              const entryError = scopedErrors[entry.id] ?? '';
               return (
                 <motion.div
                   key={entry.id}
@@ -828,7 +969,7 @@ export default function RaffleAdminPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setActionError('');
+                        noteError(entry.id, '');
                         setRejectReason('');
                         setRejectingId(rejecting ? '' : entry.id);
                       }}
@@ -887,6 +1028,8 @@ export default function RaffleAdminPage() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+
+                  <ErrorNote message={entryError} />
                 </motion.div>
               );
             })}
@@ -962,28 +1105,58 @@ export default function RaffleAdminPage() {
           <>
             <SectionHeading title="Rejected" count={groups.rejected.length} tone="text-white/50" />
             <div className="space-y-2">
-              {groups.rejected.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="rounded border border-white/10 bg-navy-800/40 px-3 py-2.5 opacity-70"
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-white/80 text-sm break-words">
-                      {entry.fullName || entry.displayName}
-                    </span>
-                    <span className="text-white/35 text-xs whitespace-nowrap">
-                      {formatUsd(entry.amountCents)}
-                    </span>
+              {/* Deliberately NOT dimmed with opacity: these cards carry a live
+                  control now, and a 70% button is a button nobody trusts is
+                  tappable. The muted text colours already read as settled. */}
+              {groups.rejected.map((entry) => {
+                const busy = busyId === entry.id;
+                const entryError = scopedErrors[entry.id] ?? '';
+                return (
+                  <div
+                    key={entry.id}
+                    className="rounded border border-white/10 bg-navy-800/40 px-3 py-2.5"
+                  >
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-white/80 text-sm break-words">
+                        {entry.fullName || entry.displayName}
+                      </span>
+                      <span className="text-white/35 text-xs whitespace-nowrap">
+                        {formatUsd(entry.amountCents)}
+                      </span>
+                    </div>
+                    <div className="text-white/40 text-xs mt-0.5 break-words">
+                      {entry.rejectReason || 'no reason recorded'}
+                    </div>
+                    <div className="text-white/25 text-[11px] mt-0.5 break-all">
+                      {prettyHandle(entry.venmoHandle)}
+                      {entry.receiptCode ? ` · ${entry.receiptCode}` : ''}
+                    </div>
+
+                    {/* Rejecting is one tap on a phone, and it is the wrong tap
+                        often enough to matter. The server will still verify a
+                        rejected entry while the draw is open, so this undoes it
+                        rather than leaving the coach to text somebody. Once the
+                        list is frozen the pool is closed and this disappears. */}
+                    {drawStatus === 'open' && (
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <button
+                          type="button"
+                          onClick={() => void runVerify(entry)}
+                          disabled={busy}
+                          className={SMALL_GHOST}
+                        >
+                          {busy ? 'Working' : 'Verify anyway'}
+                        </button>
+                        <span className="text-white/30 text-[11px] leading-tight">
+                          Rejected by mistake? This issues ticket numbers.
+                        </span>
+                      </div>
+                    )}
+
+                    <ErrorNote message={entryError} />
                   </div>
-                  <div className="text-white/40 text-xs mt-0.5 break-words">
-                    {entry.rejectReason || 'no reason recorded'}
-                  </div>
-                  <div className="text-white/25 text-[11px] mt-0.5 break-all">
-                    {prettyHandle(entry.venmoHandle)}
-                    {entry.receiptCode ? ` · ${entry.receiptCode}` : ''}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
@@ -992,8 +1165,8 @@ export default function RaffleAdminPage() {
         <SectionHeading title="Freeze the list" tone="text-gold-500" />
         <div className="card-electric rounded-lg p-3.5">
           <p className="text-white/55 text-sm leading-relaxed">
-            Do this once every payment is matched and before the drawing. It locks the numbered list
-            and publishes a fingerprint of it, so nobody can claim the list was edited afterwards.
+            Do this once every payment is matched. It locks the numbered list and publishes a
+            fingerprint of it, so nobody can claim the list was edited afterwards.
           </p>
 
           {frozenHash ? (
@@ -1004,8 +1177,47 @@ export default function RaffleAdminPage() {
                 {frozenCount === null ? '' : `${frozenCount} tickets frozen`}
               </div>
             </div>
+          ) : freezeWindowPassed && drawStatus !== 'frozen' && drawStatus !== 'drawn' ? (
+            /* The window is gone and no tap on this screen can bring it back.
+               Say so, and do not leave a button sitting there that the database
+               is going to refuse. */
+            <div
+              className="mt-3 rounded border border-red-500/50 bg-red-950/50 px-3 py-3"
+              role="alert"
+            >
+              <div className="font-accent uppercase tracking-widest text-[10px] text-red-300">
+                The freeze window has passed
+              </div>
+              <p className="text-red-100/90 text-sm leading-relaxed mt-1.5">
+                It is now past {FREEZE_DEADLINE_LABEL}, so the {SEED_SOURCE_LABEL} has already
+                published its number. The database refuses a freeze from that moment on, because a
+                list sealed after the winning number exists proves nothing. Nothing on this screen
+                can get around that, and the drawing cannot be run on an unfrozen list.
+              </p>
+              <p className="text-red-100/90 text-sm leading-relaxed mt-2">
+                Contact whoever runs the site now, before the {DRAW_TIME_LABEL} drawing, and do not
+                announce a winner until they answer.
+              </p>
+            </div>
           ) : (
             <>
+              {/* The deadline the coach is actually racing. It is not the
+                  drawing, and the gap between the two is most of a workday. */}
+              <div className="mt-3 rounded border border-gold-500/45 bg-gold-500/10 px-3 py-2.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className={LABEL}>Hard deadline</div>
+                  <div className="text-gold-300 font-accent uppercase tracking-wider text-[11px] whitespace-nowrap">
+                    {formatTimeLeft(msToFreezeDeadline)} left
+                  </div>
+                </div>
+                <p className="text-gold-100/90 text-sm leading-relaxed mt-1.5">
+                  Freeze before {FREEZE_DEADLINE_LABEL}. The {SEED_SOURCE_LABEL} publishes then, and
+                  a list sealed after the winning number exists proves nothing, so the database
+                  refuses a freeze from that moment on. Do not wait for the {DRAW_TIME_LABEL}{' '}
+                  drawing.
+                </p>
+              </div>
+
               <label className={`${LABEL} block mt-3`} htmlFor="freeze-confirm">
                 Type FREEZE to enable
               </label>
@@ -1042,6 +1254,7 @@ export default function RaffleAdminPage() {
                   This draw is already {drawStatus}, so it cannot be frozen again.
                 </p>
               )}
+              <ErrorNote message={scopedErrors[SCOPE_FREEZE] ?? ''} />
             </>
           )}
         </div>
@@ -1136,14 +1349,89 @@ export default function RaffleAdminPage() {
                 {drawBusy ? 'Drawing' : 'Run the drawing'}
               </button>
 
+              <p className="mt-2 text-white/45 text-xs leading-relaxed">
+                This writes the winner straight to the public page. It runs once and cannot be
+                undone or run again.
+              </p>
+
               {drawStatus !== null && drawStatus !== 'frozen' && (
                 <p className="mt-2 text-white/40 text-xs">
                   This draw is {drawStatus}. It has to be frozen before it can be drawn.
                 </p>
               )}
+              <ErrorNote message={scopedErrors[SCOPE_DRAW] ?? ''} />
             </>
           )}
         </div>
+
+        {/* ---------------- VIDEO ---------------- */}
+        {/* The rules promise every entrant this recording, and until now the
+            only way to keep that promise was a hand written database update. */}
+        {drawStatus === 'drawn' && (
+          <>
+            <SectionHeading title="Publish the recording" tone="text-gold-500" />
+            <div className="card-electric rounded-lg p-3.5">
+              <p className="text-white/55 text-sm leading-relaxed">
+                Everyone who entered was promised the video of the drawing. Paste the link to it and
+                save, and it appears on the public raffle page.
+              </p>
+
+              {savedVideoUrl && (
+                <div className="mt-3 rounded border border-gold-500/30 bg-navy-900/60 px-3 py-2.5">
+                  <div className={LABEL}>Posted right now</div>
+                  <a
+                    href={savedVideoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-gold-400 hover:text-gold-300 text-xs break-all mt-1 underline underline-offset-2"
+                  >
+                    {savedVideoUrl}
+                  </a>
+                </div>
+              )}
+
+              <label className={`${LABEL} block mt-3`} htmlFor="video-url">
+                Link to the recording
+              </label>
+              <input
+                id="video-url"
+                type="url"
+                inputMode="url"
+                value={videoUrl}
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                onChange={(e) => {
+                  videoTouched.current = true;
+                  setVideoJustSaved(false);
+                  noteError(SCOPE_VIDEO, '');
+                  setVideoUrl(e.target.value);
+                }}
+                placeholder="https://"
+                className={`${FIELD} mt-1`}
+              />
+
+              <button
+                type="button"
+                onClick={() => void runVideo()}
+                disabled={videoBusy || !videoUrl.trim()}
+                className={`btn-lightning text-sm w-full mt-2.5 ${
+                  videoBusy || !videoUrl.trim() ? 'opacity-40 pointer-events-none' : ''
+                }`}
+              >
+                {videoBusy ? 'Saving' : savedVideoUrl ? 'Update the link' : 'Publish the link'}
+              </button>
+
+              {videoJustSaved && (
+                <p className="mt-2 text-gold-400 font-accent uppercase tracking-widest text-[10px]">
+                  Saved. It is on the public page now.
+                </p>
+              )}
+              <ErrorNote message={scopedErrors[SCOPE_VIDEO] ?? ''} />
+            </div>
+          </>
+        )}
 
         <p className="mt-8 text-white/25 text-[11px] leading-relaxed">
           Everything on this screen is private. Only a first name and last initial ever reach the

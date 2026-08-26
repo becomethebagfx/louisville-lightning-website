@@ -1,6 +1,11 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { RAFFLE_CONTACT, SEED_SOURCE_LABEL, type RaffleDraw } from '../../lib/raffleData';
+import {
+  RAFFLE_CONTACT,
+  SEED_SOURCE_LABEL,
+  type RaffleBoardRow,
+  type RaffleDraw,
+} from '../../lib/raffleData';
 import { useRaffleBoard, useRaffleDraw } from '../../lib/useRaffle';
 
 /* ============================================================
@@ -27,6 +32,54 @@ const EYEBROW = 'font-accent uppercase tracking-wider text-xs text-gold-500/80';
 const DT = 'font-accent uppercase tracking-wider text-xs text-white/40';
 const MONO = 'font-mono text-[11px] sm:text-xs rounded border border-white/10 bg-navy-900 p-3';
 const NOT_PUBLISHED = 'Not published yet';
+
+/* ------------------------------------------------------------
+   THE RECIPE BEHIND THE FINGERPRINT
+
+   The panel below tells people they can prove the list for
+   themselves. That is only true if the thing that was hashed is
+   published, so it is, exactly.
+
+   These mirror raffle_freeze in
+   supabase/migrations/20260825b_raffle_hardening.sql. If the
+   preimage in that function ever changes, change it here in the
+   same commit, or this page starts handing people a recipe that
+   does not reproduce the fingerprint printed beside it.
+   ------------------------------------------------------------ */
+
+const PREIMAGE_VERSION = 'lightning-raffle/v1';
+
+/** The five parts, in order, one per line. */
+const PREIMAGE_TEMPLATE = [
+  PREIMAGE_VERSION,
+  '<draw id>',
+  '<ticket count>',
+  '<seed source>',
+  '<one line per confirmed entry>',
+].join('\n');
+
+const ROW_TEMPLATE = 'ticket_start|ticket_end|display_name';
+const ROW_EXAMPLE = '12|14|Sarah M.';
+const HASH_CMD_UNIX = 'shasum -a 256 list.txt';
+const HASH_CMD_WINDOWS = 'certutil -hashfile list.txt SHA256';
+
+/**
+ * Rebuilds the exact bytes raffle_freeze hashed, from the public board.
+ * Every value comes off the draw row or the board, never a guess: a
+ * reconstruction that quietly substituted a fallback would hash to
+ * something else and look like the commitment had failed.
+ */
+function buildPreimage(draw: RaffleDraw, rows: readonly RaffleBoardRow[]): string {
+  return [
+    PREIMAGE_VERSION,
+    draw.id,
+    String(draw.frozen_ticket_count ?? ''),
+    // The function coalesces a missing source to an empty line. Mirror that
+    // rather than filling in the label, which would not be what was hashed.
+    draw.seed_source ?? '',
+    rows.map((r) => `${r.ticket_start}|${r.ticket_end}|${r.display_name}`).join('\n'),
+  ].join('\n');
+}
 
 /** The contract now carries frozen_ticket_count, so read it straight. */
 function frozenTicketCount(draw: RaffleDraw): number | null {
@@ -57,6 +110,188 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+  return (
+    <div>
+      <div className={DT}>
+        Step {n}. {title}
+      </div>
+      <div className="mt-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Anything a person has to copy character for character goes in one of these.
+ * whitespace-pre with its own scrollbar, never break-all: a wrapped command is
+ * a command somebody retypes wrong, and this whole panel is about exactness.
+ */
+function CodeBox({
+  label,
+  muted = false,
+  children,
+}: {
+  label?: string;
+  muted?: boolean;
+  children: string;
+}) {
+  return (
+    <div>
+      {label && <div className={`${DT} mb-1`}>{label}</div>}
+      <pre
+        className={`whitespace-pre overflow-x-auto overscroll-x-contain ${
+          muted ? 'text-white/70' : 'text-gold-300/90 select-all'
+        } ${MONO}`}
+      >
+        {children}
+      </pre>
+    </div>
+  );
+}
+
+/**
+ * The finished block, rebuilt from the board as it stands right now. Mounted
+ * only once the reader opens the recipe, so the 95 percent who never open it
+ * never pay for the extra board read.
+ */
+function PreimageBlock({ draw }: { draw: RaffleDraw }) {
+  const { rows, loading, error } = useRaffleBoard();
+
+  if (loading) {
+    return <div className="h-24 rounded bg-white/5 animate-pulse" aria-hidden="true" />;
+  }
+
+  /* Never render a half-built block. An empty or failed read would hash to
+     something that is not the fingerprint, which reads as the commitment
+     failing when the only thing that failed was a fetch. */
+  if (error || rows.length === 0) {
+    return (
+      <p className="text-white/50 text-sm leading-relaxed">
+        The board did not load, so the block cannot be rebuilt here. Reload the
+        page and open this again, or assemble it by hand from the numbered list
+        above using steps 1 to 3.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <pre
+        className={`max-h-72 overflow-auto overscroll-contain whitespace-pre select-all text-gold-300/90 ${MONO}`}
+      >
+        {buildPreimage(draw, rows)}
+      </pre>
+      <p className="text-white/50 text-sm leading-relaxed">
+        Select all of it, paste it into a plain text file, and save it with no
+        blank line at the end.
+      </p>
+    </>
+  );
+}
+
+/**
+ * A fingerprint nobody can reproduce is decoration. This publishes the exact
+ * preimage so the handful of people who actually check are able to, and stays
+ * collapsed so it does not shout at everyone who never will.
+ */
+function VerifyRecipe({ draw }: { draw: RaffleDraw }) {
+  const [open, setOpen] = useState(false);
+  const count = frozenTicketCount(draw);
+
+  return (
+    <details
+      className="mt-5 rounded-lg border border-white/10 bg-navy-900/50"
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
+      <summary className="flex items-center gap-2 min-h-11 px-4 py-3 cursor-pointer select-none list-none text-gold-400 hover:text-gold-300 transition-colors [&::-webkit-details-marker]:hidden">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+          className={`w-3 h-3 shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : 'rotate-0'}`}
+        >
+          <path d="M4 2l5 4-5 4z" />
+        </svg>
+        <span className="font-accent uppercase tracking-wider text-xs">
+          Check this fingerprint yourself
+        </span>
+      </summary>
+
+      <div className="px-4 pb-5 space-y-5">
+        <p className="text-white/60 text-sm leading-relaxed">
+          Nothing below is a description of the process. It is the process. The
+          fingerprint above is the sha256 of one exact block of text, and this is
+          how that block is built. Anything in a box is exact, so a line too long
+          for your screen scrolls sideways inside its box rather than wrapping.
+        </p>
+
+        <Step n={1} title="The text that gets hashed">
+          <CodeBox muted>{PREIMAGE_TEMPLATE}</CodeBox>
+          <p className="text-white/50 text-sm leading-relaxed">
+            Five parts, in that order, joined by a single newline each. Line
+            feeds, not carriage returns. The text is UTF-8, and there is no
+            newline after the last entry.
+          </p>
+        </Step>
+
+        <Step n={2} title="The values for this draw">
+          <CodeBox label="Draw id">{draw.id}</CodeBox>
+          <CodeBox label="Ticket count">{count === null ? NOT_PUBLISHED : String(count)}</CodeBox>
+          {draw.seed_source ? (
+            <CodeBox label="Seed source">{draw.seed_source}</CodeBox>
+          ) : (
+            <div>
+              <div className={`${DT} mb-1`}>Seed source</div>
+              <p className="text-white/50 text-sm leading-relaxed">
+                No source was recorded on this draw, so that line is empty.
+              </p>
+            </div>
+          )}
+          <p className="text-white/50 text-sm leading-relaxed">
+            The ticket count is the total number of tickets in the pool, the same
+            number printed as Tickets locked in above. It is also the divisor in
+            the winning number, which is why it is inside the fingerprint.
+          </p>
+        </Step>
+
+        <Step n={3} title="One line per confirmed entry">
+          <CodeBox muted>{ROW_TEMPLATE}</CodeBox>
+          <p className="text-white/50 text-sm leading-relaxed">
+            One line for every confirmed entry on the board, sorted by first
+            ticket number, lowest first. An entry holding one ticket repeats the
+            same number on both sides, so three tickets held by Sarah M. look
+            like this:
+          </p>
+          <CodeBox>{ROW_EXAMPLE}</CodeBox>
+        </Step>
+
+        {count !== null && (
+          <Step n={4} title="The finished block">
+            {/* Gated on `open`, not just on the details element being closed:
+                a collapsed <details> still mounts its children, so without this
+                every visitor pays for a board read they never look at. */}
+            {open ? (
+              <PreimageBlock draw={draw} />
+            ) : (
+              <div className="h-24 rounded bg-white/5" aria-hidden="true" />
+            )}
+          </Step>
+        )}
+
+        <Step n={count === null ? 4 : 5} title="Hash it">
+          <CodeBox label="Mac or Linux">{HASH_CMD_UNIX}</CodeBox>
+          <CodeBox label="Windows">{HASH_CMD_WINDOWS}</CodeBox>
+          <p className="text-white/50 text-sm leading-relaxed">
+            The 64 characters it prints have to match the fingerprint at the top
+            of this panel, character for character. Change one letter of one name,
+            move one ticket, add or drop one entry, and they will not.
+          </p>
+        </Step>
+      </div>
+    </details>
+  );
+}
+
 /**
  * The published fingerprint. Shown from the moment the list is frozen and kept
  * on screen after the draw, because the hash is what makes the result checkable.
@@ -84,6 +319,9 @@ function Commitment({ draw }: { draw: RaffleDraw }) {
         </Field>
         <Field label="Locked at">{when ?? NOT_PUBLISHED}</Field>
       </dl>
+
+      {/* The recipe only means anything next to a real fingerprint. */}
+      {draw.frozen_list_sha256 && <VerifyRecipe draw={draw} />}
     </div>
   );
 }

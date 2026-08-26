@@ -8,8 +8,13 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RAFFLE_CONTACT, formatTicketRange, type RaffleReceipt } from '../../lib/raffleData';
-import { lookupReceipt } from '../../lib/useRaffle';
+import {
+  RAFFLE_CONTACT,
+  formatTicketRange,
+  type RaffleDraw,
+  type RaffleReceipt,
+} from '../../lib/raffleData';
+import { lookupReceipt, useRaffleDraw } from '../../lib/useRaffle';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -23,7 +28,21 @@ type LookupState =
   | { kind: 'checking' }
   | { kind: 'error'; message: string }
   | { kind: 'missing'; code: string }
-  | { kind: 'found'; receipt: RaffleReceipt };
+  | { kind: 'found'; receipt: RaffleReceipt; code: string };
+
+/** ISO instant to something a parent reads, in their own time zone. */
+function formatWhen(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+}
 
 function CoachLine({ lead }: { lead: string }) {
   return (
@@ -65,7 +84,60 @@ function StatusPill({ tone, children }: { tone: 'amber' | 'gold' | 'red'; childr
   );
 }
 
-function ReceiptResult({ receipt }: { receipt: RaffleReceipt }) {
+/**
+ * The pending entry that never got confirmed, seen after the list was sealed.
+ * The database refuses to add to a frozen list, so this person is not waiting
+ * on anything and must not be told otherwise. The one useful thing left is the
+ * receipt code and the coach's number.
+ */
+function SealedOutResult({
+  receipt,
+  code,
+  draw,
+  chancesLabel,
+}: {
+  receipt: RaffleReceipt;
+  code: string;
+  draw: RaffleDraw;
+  chancesLabel: string;
+}) {
+  const sealedWhen = formatWhen(draw.frozen_at);
+
+  return (
+    <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-5">
+      <StatusPill tone="red">Not in the drawing</StatusPill>
+      <p className="mt-3 text-white font-body">
+        <span className="font-semibold">{receipt.display_name}</span>, {chancesLabel}.
+      </p>
+      <p className="mt-1.5 text-sm text-red-100 font-body leading-relaxed">
+        This entry was never confirmed, and the numbered list was sealed without it
+        {sealedWhen ? ` on ${sealedWhen}` : ''}. Nothing can be added to a sealed
+        list, so it has no ticket number and it is not in the drawing
+        {draw.status === 'drawn' ? ', which has already been held' : ''}.
+      </p>
+      <p className="mt-2.5 text-sm text-white/70 font-body leading-relaxed">
+        Do not submit it again. Text Coach {CONTACT_FIRST} this receipt code so he can
+        look into it:
+      </p>
+      <p className="mt-2 font-mono tracking-[0.2em] text-lg text-gold-300 break-all select-all">
+        {code}
+      </p>
+      <div className="mt-3">
+        <CoachLine lead="Send it to" />
+      </div>
+    </div>
+  );
+}
+
+function ReceiptResult({
+  receipt,
+  code,
+  draw,
+}: {
+  receipt: RaffleReceipt;
+  code: string;
+  draw: RaffleDraw | null;
+}) {
   const chancesLabel = receipt.chances === 1 ? '1 chance' : `${receipt.chances} chances`;
 
   if (receipt.status === 'verified') {
@@ -91,6 +163,15 @@ function ReceiptResult({ receipt }: { receipt: RaffleReceipt }) {
   }
 
   if (receipt.status === 'pending') {
+    /* The draw is the difference between "hold tight" and "this is over".
+       While the draw row has not loaded we do not know which, so we say the
+       softer of the two rather than guess. */
+    if (draw && draw.status !== 'open') {
+      return (
+        <SealedOutResult receipt={receipt} code={code} draw={draw} chancesLabel={chancesLabel} />
+      );
+    }
+
     return (
       <div className="rounded-xl border border-amber-300/60 bg-amber-400/15 p-5">
         <StatusPill tone="amber">Pending</StatusPill>
@@ -134,12 +215,19 @@ function ReceiptResult({ receipt }: { receipt: RaffleReceipt }) {
 export default function ReceiptLookup() {
   const [code, setCode] = useState('');
   const [state, setState] = useState<LookupState>({ kind: 'idle' });
+  /* A pending receipt means something different once the list is sealed, so
+     this surface has to know the draw status, not just the entry status. */
+  const { draw } = useRaffleDraw();
 
   const checking = state.kind === 'checking';
 
   async function handleCheck(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (checking) return;
+
+    // The same normalisation lookupReceipt applies, so what we echo back at
+    // the entrant is the code the lookup actually ran on.
+    const clean = code.trim().toUpperCase();
 
     setState({ kind: 'checking' });
     const result = await lookupReceipt(code);
@@ -150,10 +238,10 @@ export default function ReceiptLookup() {
       return;
     }
     if (!result.receipt) {
-      setState({ kind: 'missing', code: code.trim().toUpperCase() });
+      setState({ kind: 'missing', code: clean });
       return;
     }
-    setState({ kind: 'found', receipt: result.receipt });
+    setState({ kind: 'found', receipt: result.receipt, code: clean });
   }
 
   return (
@@ -240,7 +328,9 @@ export default function ReceiptLookup() {
               </div>
             )}
 
-            {state.kind === 'found' && <ReceiptResult receipt={state.receipt} />}
+            {state.kind === 'found' && (
+              <ReceiptResult receipt={state.receipt} code={state.code} draw={draw} />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

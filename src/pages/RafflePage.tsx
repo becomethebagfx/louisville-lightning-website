@@ -1,3 +1,24 @@
+/* ============================================================
+   RAFFLE PAGE
+   Every date, price, phone number and URL on this page comes
+   from raffleData.ts, and Supabase is reached only through
+   useRaffle.ts.
+
+   THE DEADLINE THAT MATTERS HERE IS ENTRIES_CLOSE_AT, NOT
+   DRAW_AT. They are 19 hours and 1 minute apart: the database
+   stops accepting entries at 11:59pm ET on September 30, and
+   the drawing is not until 7:00pm ET on October 1. Anything on
+   this page that invites a payment (the countdown, the CTA, the
+   Venmo QR and the Open Venmo buttons) has to disappear at the
+   CLOSE time, because step 1 of the flow it teaches is "send
+   the money first". A page that still says enter on October 1
+   takes somebody's $10 to $1000 for an entry the database will
+   refuse.
+
+   The draw row outranks the visitor's clock. A phone set to the
+   wrong day cannot talk its way back into the entry path.
+   ============================================================ */
+
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import LightningBackground from '../components/LightningBackground';
@@ -7,7 +28,7 @@ import RaffleEntryForm from '../components/raffle/RaffleEntryForm';
 import ReceiptLookup from '../components/raffle/ReceiptLookup';
 import TicketBoard from '../components/raffle/TicketBoard';
 import DrawResult from '../components/raffle/DrawResult';
-import { useCountdown } from '../lib/useRaffle';
+import { useCountdown, useRaffleDraw } from '../lib/useRaffle';
 import {
   PRIZE,
   VENMO,
@@ -15,10 +36,11 @@ import {
   RAFFLE_RULES,
   PRICE_PER_CHANCE_CENTS,
   MAX_CHANCES_PER_ENTRY,
-  DRAW_AT,
+  ENTRIES_CLOSE_AT,
+  ENTRIES_CLOSE_LABEL,
+  FREEZE_DEADLINE_LABEL,
   DRAW_DATE_LABEL,
   DRAW_TIME_LABEL,
-  ENTRIES_CLOSE_LABEL,
   chancesToCents,
   formatUsd,
 } from '../lib/raffleData';
@@ -117,10 +139,213 @@ function StepCard({
   );
 }
 
+/** Where the closed page sends people instead of the entry path. */
+function LinkCard({ href, title, children }: { href: string; title: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="card-electric rounded-lg p-5 block h-full group transition-shadow hover:shadow-[0_0_30px_rgba(245,184,0,0.18)]"
+    >
+      <h3 className="text-stadium text-xl text-white leading-tight transition-colors group-hover:text-gold-400">
+        {title}
+      </h3>
+      <p className="mt-2 text-white/60 text-sm leading-relaxed">{children}</p>
+    </a>
+  );
+}
+
+/* ------------------------------------------------------------
+   HOW TO ENTER
+   Rendered ONLY while entries are open. Step 1 is a Venmo
+   payment, and the QR code plus the Open Venmo buttons live
+   inside it, so this whole section is the money-losing surface
+   once the database stops accepting entries.
+   ------------------------------------------------------------ */
+function HowToEnter() {
+  return (
+    <section className="relative bg-navy-900 py-12 md:py-16 px-4">
+      <div className="max-w-4xl mx-auto">
+        <motion.div {...fadeUp} transition={{ duration: 0.8, ease }} className="text-center">
+          <h2 className="text-stadium text-3xl md:text-5xl">
+            <span className="text-white">How to</span>{' '}
+            <span className="text-gradient-gold">Enter</span>
+          </h2>
+          <p className="mt-3 text-white/60 max-w-xl mx-auto">
+            Two things have to happen, and both of them are on you. Send the money, then fill out
+            the form.
+          </p>
+        </motion.div>
+
+        {/* The one thing people get wrong. Say it before the steps, not after. */}
+        <motion.div
+          {...fadeUp}
+          transition={{ duration: 0.8, delay: 0.1, ease }}
+          className="mt-7 rounded-lg border-2 border-gold-500 bg-gold-500/10 p-5 md:p-6 flex items-start gap-3"
+        >
+          <BoltIcon className="w-5 h-5 mt-0.5 text-gold-500 flex-shrink-0" />
+          <p className="text-white text-sm md:text-base leading-relaxed">
+            <span className="text-stadium text-lg md:text-xl text-gold-500 tracking-wide">
+              Both steps are required.
+            </span>{' '}
+            A Venmo payment with no entry form does not get a ticket number, and an entry form with
+            no Venmo payment does not get one either. Do step 1, then do step 2.
+          </p>
+        </motion.div>
+
+        <ol className="mt-8 space-y-5 list-none p-0">
+          <StepCard n={1} delay={0.1} title={`Send ${PRICE} per chance on Venmo`}>
+            <p>
+              Send it to{' '}
+              <span className="text-gold-500 font-semibold">{VENMO.displayName}</span>. Any multiple
+              counts: {PRICE} is one chance, {THREE_CHANCES} is three. Up to{' '}
+              {MAX_CHANCES_PER_ENTRY} chances on a single entry.
+            </p>
+            <p className="mt-2 text-white/50 text-sm">
+              The account belongs to {VENMO.accountOwner}. Check that name before you send anything.
+            </p>
+
+            <div className="mt-5 flex flex-col sm:flex-row items-center gap-5">
+              <div className="flex-shrink-0 rounded-xl bg-white p-3 ring-2 ring-gold-500/50 shadow-[0_0_30px_rgba(245,184,0,0.18)]">
+                <img
+                  src={VENMO.qrImage}
+                  alt={`Venmo QR code for ${VENMO.displayName}`}
+                  className="block w-40 h-40 sm:w-44 sm:h-44"
+                />
+              </div>
+
+              <div className="w-full flex-1 text-center sm:text-left">
+                <a
+                  href={VENMO.codeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-lightning text-base w-full sm:w-auto inline-flex items-center justify-center gap-2"
+                >
+                  <BoltIcon className="w-4 h-4" />
+                  Open Venmo
+                </a>
+                <p className="mt-3 text-white/50 text-sm">
+                  Point your phone camera at the code, or tap the button and Venmo opens on the
+                  right account.
+                </p>
+              </div>
+            </div>
+          </StepCard>
+
+          <StepCard n={2} delay={0.2} title="Fill out the entry form below">
+            <p>
+              The form is the only way Coach {CONTACT_FIRST} can match a Venmo payment to a person.
+              It takes about thirty seconds and it hands you a receipt code, so screenshot that code
+              when it shows up.
+            </p>
+            <a
+              href="#enter"
+              className="btn-lightning-outline text-sm inline-flex items-center gap-2 mt-4"
+            >
+              Jump to the form
+            </a>
+          </StepCard>
+
+          <StepCard n={3} delay={0.3} title="Watch for your ticket numbers on the board">
+            <p>
+              Your entry starts as pending. Once the payment is matched it flips to verified and
+              your ticket numbers post on the board on this page. Only a first name and a last
+              initial ever appear there.
+            </p>
+            <a
+              href="#board"
+              className="btn-lightning-outline text-sm inline-flex items-center gap-2 mt-4"
+            >
+              See the board
+            </a>
+          </StepCard>
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------
+   WHAT REPLACES IT
+   Same slot, opposite job: stop the payment, then hand people
+   the three things they can still do.
+
+   Deliberately does NOT repeat the entry form's closed card.
+   That card, a screen below this one, owns the "sent the money
+   and never got a receipt code" recovery. This one owns the
+   money warning and the navigation, and points at the other
+   rather than restating it.
+   ------------------------------------------------------------ */
+function EntriesClosedNotice({ drawn }: { drawn: boolean }) {
+  return (
+    <section className="relative bg-navy-900 py-12 md:py-16 px-4">
+      <div className="max-w-4xl mx-auto">
+        <motion.div {...fadeUp} transition={{ duration: 0.8, ease }} className="text-center">
+          <h2 className="text-stadium text-3xl md:text-5xl">
+            <span className="text-white">Do Not Send</span>{' '}
+            <span className="text-gradient-gold">Any More Money</span>
+          </h2>
+          <p className="mt-3 text-white/60 max-w-xl mx-auto">
+            Entries closed {ENTRIES_CLOSE_LABEL}, and the Venmo instructions came down with them.
+          </p>
+        </motion.div>
+
+        <motion.div
+          {...fadeUp}
+          transition={{ duration: 0.8, delay: 0.1, ease }}
+          className="mt-7 rounded-lg border-2 border-gold-500 bg-gold-500/10 p-5 md:p-6 flex items-start gap-3"
+        >
+          <BoltIcon className="w-5 h-5 mt-0.5 text-gold-500 flex-shrink-0" />
+          <p className="text-white text-sm md:text-base leading-relaxed">
+            <span className="text-stadium text-lg md:text-xl text-gold-500 tracking-wide">
+              Nothing sent now can buy a chance.
+            </span>{' '}
+            The raffle stopped taking entries at the deadline, so a payment made after it gets no
+            ticket number and Coach {CONTACT_FIRST} has to send it back by hand. Please do not send
+            one.
+          </p>
+        </motion.div>
+
+        <motion.p
+          {...fadeUp}
+          transition={{ duration: 0.8, delay: 0.15, ease }}
+          className="mt-5 text-white/55 text-sm md:text-base text-center max-w-xl mx-auto"
+        >
+          Paid before the deadline but never got a receipt code? The panel below tells you exactly
+          what to do about it.
+        </motion.p>
+
+        <motion.div
+          {...fadeUp}
+          transition={{ duration: 0.8, delay: 0.2, ease }}
+          className="mt-8 grid gap-4 sm:grid-cols-3"
+        >
+          <LinkCard href="#board" title="The ticket board">
+            Every confirmed entry and the numbers it holds, first name and last initial only.
+          </LinkCard>
+          <LinkCard href="#receipt" title="Check your entry">
+            Put in your receipt code to see whether your payment is matched and which numbers are
+            yours.
+          </LinkCard>
+          <LinkCard href="#result" title={drawn ? 'The result' : 'The frozen list'}>
+            {drawn
+              ? `The winning number, the seed it came from and the recording of the drawing.`
+              : `The numbered list and its published fingerprint, up before the drawing at ${DRAW_TIME_LABEL}.`}
+          </LinkCard>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 export default function RafflePage() {
-  // Counts down to the drawing itself. Null means the moment has passed,
-  // which is the one case where a row of zeros would be a lie.
-  const left = useCountdown(DRAW_AT);
+  /* THE GATE. Counts down to entries CLOSING, not to the drawing, and the
+     draw row can close the page even if the visitor's clock says otherwise.
+     Null from useCountdown means the close time has passed. */
+  const entriesLeft = useCountdown(ENTRIES_CLOSE_AT);
+  const { draw, loading: drawLoading } = useRaffleDraw();
+  const dbClosed = draw !== null && draw.status !== 'open';
+  const entriesClosed = entriesLeft === null || dbClosed;
+  const drawn = draw?.status === 'drawn';
 
   const smsBody = `Hi Coach ${CONTACT_FIRST}, I have a question about the ${PRIZE.name} raffle.`;
 
@@ -193,41 +418,58 @@ export default function RafflePage() {
             One glove. One winner. {DRAW_DATE_LABEL}. Every dollar goes to the team.
           </motion.p>
 
-          {/* Countdown to the drawing */}
+          {/* The clock is on the CLOSE time. That is the deadline that costs
+              somebody money, and it is 19 hours before the drawing. */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.65, ease }}
             className="mt-9 max-w-md mx-auto"
           >
-            <p className="text-gold-500/80 font-accent uppercase tracking-[0.2em] text-[11px] sm:text-xs">
-              Drawing {DRAW_TIME_LABEL}
-            </p>
-
-            {left ? (
-              <div className="mt-3 grid grid-cols-4 gap-2 sm:gap-3">
-                <CountdownTile value={left.days} label="Days" />
-                <CountdownTile value={left.hours} label="Hours" />
-                <CountdownTile value={left.minutes} label="Minutes" />
-                <CountdownTile value={left.seconds} label="Seconds" />
-              </div>
-            ) : (
-              <div className="mt-3 card-electric rounded-lg py-6 px-4">
-                <div className="text-stadium text-3xl sm:text-4xl text-gold-500 glow-gold-subtle leading-none">
-                  Entries Closed
-                </div>
+            {entriesClosed ? (
+              <div className="card-electric rounded-lg py-6 px-5">
+                <h2 className="text-stadium text-3xl sm:text-4xl text-gold-500 glow-gold-subtle leading-none">
+                  Entries are closed
+                </h2>
+                <p className="mt-3 text-white/70 text-sm leading-relaxed">
+                  {drawn ? (
+                    <>
+                      The drawing has been made. The winning number, the frozen list it was drawn
+                      from and the recording are all further down this page.
+                    </>
+                  ) : (
+                    <>
+                      The numbered list gets frozen and its fingerprint published on this page by{' '}
+                      {FREEZE_DEADLINE_LABEL}, and then the drawing runs {DRAW_TIME_LABEL}.
+                    </>
+                  )}
+                </p>
                 <p className="mt-2 text-white/50 text-sm">
                   Thank you to everybody who bought a chance.
                 </p>
               </div>
+            ) : (
+              <>
+                <p className="text-gold-500/80 font-accent uppercase tracking-[0.2em] text-[11px] sm:text-xs">
+                  Entries close in
+                </p>
+                <div className="mt-3 grid grid-cols-4 gap-2 sm:gap-3">
+                  <CountdownTile value={entriesLeft.days} label="Days" />
+                  <CountdownTile value={entriesLeft.hours} label="Hours" />
+                  <CountdownTile value={entriesLeft.minutes} label="Minutes" />
+                  <CountdownTile value={entriesLeft.seconds} label="Seconds" />
+                </div>
+                <p className="mt-3 text-white/50 text-xs sm:text-sm">
+                  Entries close {ENTRIES_CLOSE_LABEL}. The drawing is {DRAW_TIME_LABEL}.
+                </p>
+              </>
             )}
-
-            <p className="mt-3 text-white/50 text-xs sm:text-sm">
-              Entries close {ENTRIES_CLOSE_LABEL}
-            </p>
           </motion.div>
 
-          {left ? (
+          {/* Suppressed while the draw row is still in flight as well as when
+              it says closed. A CTA painted for one beat before the page
+              closes is long enough for somebody to start a payment. */}
+          {!entriesClosed && !drawLoading ? (
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -245,108 +487,13 @@ export default function RafflePage() {
         {/* ---------- 2. THE PRIZE ---------- */}
         <PrizeGallery />
 
-        {/* ---------- 3. HOW TO ENTER ---------- */}
-        <section className="relative bg-navy-900 py-12 md:py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            <motion.div {...fadeUp} transition={{ duration: 0.8, ease }} className="text-center">
-              <h2 className="text-stadium text-3xl md:text-5xl">
-                <span className="text-white">How to</span>{' '}
-                <span className="text-gradient-gold">Enter</span>
-              </h2>
-              <p className="mt-3 text-white/60 max-w-xl mx-auto">
-                Two things have to happen, and both of them are on you. Send the money, then fill
-                out the form.
-              </p>
-            </motion.div>
+        {/* ---------- 3. HOW TO ENTER, OR WHY YOU CANNOT ---------- */}
+        {entriesClosed ? <EntriesClosedNotice drawn={drawn} /> : <HowToEnter />}
 
-            {/* The one thing people get wrong. Say it before the steps, not after. */}
-            <motion.div
-              {...fadeUp}
-              transition={{ duration: 0.8, delay: 0.1, ease }}
-              className="mt-7 rounded-lg border-2 border-gold-500 bg-gold-500/10 p-5 md:p-6 flex items-start gap-3"
-            >
-              <BoltIcon className="w-5 h-5 mt-0.5 text-gold-500 flex-shrink-0" />
-              <p className="text-white text-sm md:text-base leading-relaxed">
-                <span className="text-stadium text-lg md:text-xl text-gold-500 tracking-wide">
-                  Both steps are required.
-                </span>{' '}
-                A Venmo payment with no entry form does not get a ticket number, and an entry form
-                with no Venmo payment does not get one either. Do step 1, then do step 2.
-              </p>
-            </motion.div>
-
-            <ol className="mt-8 space-y-5 list-none p-0">
-              <StepCard n={1} delay={0.1} title={`Send ${PRICE} per chance on Venmo`}>
-                <p>
-                  Send it to{' '}
-                  <span className="text-gold-500 font-semibold">{VENMO.displayName}</span>. Any
-                  multiple counts: {PRICE} is one chance, {THREE_CHANCES} is three. Up to{' '}
-                  {MAX_CHANCES_PER_ENTRY} chances on a single entry.
-                </p>
-                <p className="mt-2 text-white/50 text-sm">
-                  The account belongs to {VENMO.accountOwner}. Check that name before you send
-                  anything.
-                </p>
-
-                <div className="mt-5 flex flex-col sm:flex-row items-center gap-5">
-                  <div className="flex-shrink-0 rounded-xl bg-white p-3 ring-2 ring-gold-500/50 shadow-[0_0_30px_rgba(245,184,0,0.18)]">
-                    <img
-                      src={VENMO.qrImage}
-                      alt={`Venmo QR code for ${VENMO.displayName}`}
-                      className="block w-40 h-40 sm:w-44 sm:h-44"
-                    />
-                  </div>
-
-                  <div className="w-full flex-1 text-center sm:text-left">
-                    <a
-                      href={VENMO.codeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-lightning text-base w-full sm:w-auto inline-flex items-center justify-center gap-2"
-                    >
-                      <BoltIcon className="w-4 h-4" />
-                      Open Venmo
-                    </a>
-                    <p className="mt-3 text-white/50 text-sm">
-                      Point your phone camera at the code, or tap the button and Venmo opens on the
-                      right account.
-                    </p>
-                  </div>
-                </div>
-              </StepCard>
-
-              <StepCard n={2} delay={0.2} title="Fill out the entry form below">
-                <p>
-                  The form is the only way Coach {CONTACT_FIRST} can match a Venmo payment to a
-                  person. It takes about thirty seconds and it hands you a receipt code, so
-                  screenshot that code when it shows up.
-                </p>
-                <a
-                  href="#enter"
-                  className="btn-lightning-outline text-sm inline-flex items-center gap-2 mt-4"
-                >
-                  Jump to the form
-                </a>
-              </StepCard>
-
-              <StepCard n={3} delay={0.3} title="Watch for your ticket numbers on the board">
-                <p>
-                  Your entry starts as pending. Once the payment is matched it flips to verified and
-                  your ticket numbers post on the board on this page. Only a first name and a last
-                  initial ever appear there.
-                </p>
-                <a
-                  href="#board"
-                  className="btn-lightning-outline text-sm inline-flex items-center gap-2 mt-4"
-                >
-                  See the board
-                </a>
-              </StepCard>
-            </ol>
-          </div>
-        </section>
-
-        {/* ---------- 4. ENTRY FORM ---------- */}
+        {/* ---------- 4. ENTRY FORM ----------
+            Rendered in BOTH states on purpose. It gates itself, and that is
+            what keeps a receipt code from a just-submitted entry on screen
+            when the deadline passes while somebody is still reading it. */}
         <section id="enter" className="scroll-mt-20">
           <RaffleEntryForm />
         </section>

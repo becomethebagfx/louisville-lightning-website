@@ -7,10 +7,11 @@
 
    The public site is a static SPA. Its anon key is inside the JS
    bundle, so the browser can never be trusted with any of this.
-   The migration (supabase/migrations/20260825_create_raffle.sql)
-   revokes execute on raffle_verify_entry, raffle_freeze and
-   raffle_execute_draw from anon and grants them to service_role
-   only. This function is the one holder of that role.
+   The migrations (supabase/migrations/20260825_create_raffle.sql,
+   then 20260825b_raffle_hardening.sql) revoke execute on
+   raffle_verify_entry, raffle_freeze and raffle_execute_draw from
+   anon and grant them to service_role only. This function is the
+   one holder of that role.
 
    Nothing here is gated by a client-side PIN. The gate is the
    x-raffle-key header, compared in constant time against the
@@ -170,6 +171,14 @@ interface DrawStatusRow {
   status: string;
 }
 
+/** What a refusal message is allowed to quote back at the caller. */
+interface DrawContextRow {
+  status: string | null;
+  seed_source: string | null;
+  seed_available_at: string | null;
+  frozen_at: string | null;
+}
+
 interface VerifyResult {
   ticket_start: number;
   ticket_end: number;
@@ -213,6 +222,345 @@ function logDbError(action: string, error: DbError): void {
 
 function says(error: DbError, fragment: string): boolean {
   return error.message.toLowerCase().includes(fragment);
+}
+
+/* ------------------------------------------------------------
+   Refusals.
+
+   The three privileged functions defend the fairness of the draw
+   by raising. Every one of those raises is a decision the coach
+   has to understand while standing in a gym holding a phone, so
+   every one of them is mapped here to plain English and an honest
+   status code: 409 when the state says no, 400 when the input was
+   wrong, 500 only for something nobody predicted.
+
+   A known refusal that reaches him as a bare 500 is worse than no
+   message at all. It tells him the site is broken at the exact
+   moment the database has in fact just stopped him from doing
+   something that would have made the raffle unprovable, and the
+   difference between those two decides whether he retries, waits,
+   or picks up the phone.
+
+   The fragments below are matched against the LIVE function
+   bodies, which are supabase/migrations/20260825b_raffle_hardening.sql
+   as applied. Add a raise there and add its fragment here, and
+   keep the fragments narrow enough that no two raises in the same
+   function can match the same rule.
+   ------------------------------------------------------------ */
+
+/** Eastern time, because everything the coach reads is in it. */
+const ET_ZONE = 'America/New_York';
+
+/**
+ * An instant written the way the rest of the site writes one: month,
+ * day, then a lowercase clock time, in Eastern. Handed the draw row's
+ * seed_available_at it reproduces FREEZE_DEADLINE_LABEL from
+ * src/lib/raffleData.ts exactly, and that is the point. No date, time
+ * or deadline is typed into this file. Every one the coach reads in a
+ * refusal is rendered from the column the database is enforcing, so
+ * the message and the rule cannot drift apart.
+ */
+export function etLabel(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || value.trim().length === 0) return null;
+  const at = new Date(value);
+  if (Number.isNaN(at.getTime())) return null;
+
+  const day = new Intl.DateTimeFormat('en-US', {
+    timeZone: ET_ZONE,
+    month: 'long',
+    day: 'numeric',
+  }).format(at);
+  const clock = new Intl.DateTimeFormat('en-US', {
+    timeZone: ET_ZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+    .format(at)
+    .replace(/\s?AM$/, 'am')
+    .replace(/\s?PM$/, 'pm');
+
+  return `${day} at ${clock} ET`;
+}
+
+/** Live values from the draw row, used to make a refusal specific. */
+interface DrawContext {
+  readonly status: string | null;
+  readonly seedSource: string | null;
+  readonly seedAvailableLabel: string | null;
+  readonly frozenAtLabel: string | null;
+}
+
+const NO_DRAW_CONTEXT: DrawContext = {
+  status: null,
+  seedSource: null,
+  seedAvailableLabel: null,
+  frozenAtLabel: null,
+};
+
+interface Refusal {
+  readonly status: number;
+  readonly message: string;
+}
+
+interface RefusalRule {
+  /** Lowercase fragment, unique to one raise inside one function. */
+  readonly fragment: string;
+  /** True when the message quotes a live value off the draw row. */
+  readonly needsDraw: boolean;
+  readonly refuse: (draw: DrawContext) => Refusal;
+}
+
+/** Joins the sentences that are actually present. */
+function sentences(parts: readonly (string | null)[]): string {
+  return parts.filter((part): part is string => part !== null && part.length > 0).join(' ');
+}
+
+/* raffle_verify_entry */
+const VERIFY_REFUSALS: readonly RefusalRule[] = [
+  {
+    // 'entry % is already verified'
+    fragment: 'already verified',
+    needsDraw: false,
+    refuse: () => ({
+      status: 409,
+      message: 'That entry is already verified and already holds ticket numbers.',
+    }),
+  },
+  {
+    // 'draw % is % and can no longer issue tickets'
+    fragment: 'can no longer issue tickets',
+    needsDraw: true,
+    // The status is only quoted when it still agrees with the refusal. A
+    // row that reads 'open' on the follow up read cannot be the row that
+    // just refused, and printing it would tell the coach the opposite of
+    // what happened.
+    refuse: (draw) => ({
+      status: 409,
+      message: `That draw is ${draw.status !== null && draw.status !== 'open' ? draw.status : 'no longer open'}. Its numbered list is already published, so no further tickets can be issued.`,
+    }),
+  },
+  {
+    // 'entry % not found'
+    fragment: 'not found',
+    needsDraw: false,
+    refuse: () => ({ status: 404, message: 'No entry with that id.' }),
+  },
+];
+
+/* raffle_freeze */
+const FREEZE_REFUSALS: readonly RefusalRule[] = [
+  {
+    // 'refusing to freeze draw %: its seed (%) published at % and is already
+    //  public. Sealing the list after the winning number exists would make
+    //  the draw unprovable.'
+    //
+    // This is the refusal the entire hardening design exists to be able to
+    // produce, so it gets the longest and plainest message in the file. It
+    // has to say what happened, that the list can no longer be sealed at
+    // all, and that nothing gets announced until a human who understands
+    // the commitment has looked at it.
+    fragment: 'is already public',
+    needsDraw: true,
+    refuse: (draw) => ({
+      status: 409,
+      message: sentences([
+        'The seed number for this draw is already public, so this entry list can no longer be sealed.',
+        draw.seedAvailableLabel === null
+          ? 'It had to be sealed before the seed drawing published.'
+          : `It had to be sealed before ${draw.seedAvailableLabel}, when the seed drawing published.`,
+        'Sealing it now, after the winning number already exists, would make the draw impossible to prove fair, so the database refused.',
+        'Do not run the draw and do not announce a winner. Contact whoever runs the site before you tell anybody anything.',
+      ]),
+    }),
+  },
+  {
+    // 'refusing to freeze draw % with zero verified entries'
+    fragment: 'zero verified entries',
+    needsDraw: false,
+    refuse: () => ({
+      status: 409,
+      message: 'There are no verified entries to freeze. Verify at least one paid entry first.',
+    }),
+  },
+  {
+    // 'draw % is % and cannot be frozen again'
+    fragment: 'cannot be frozen again',
+    needsDraw: true,
+    refuse: (draw) => ({
+      status: 409,
+      message:
+        draw.status === 'drawn'
+          ? 'That draw has already been run, so its list cannot be frozen again.'
+          : draw.status === null || draw.status === 'open'
+            ? 'That draw was not open when the freeze ran, so it could not be sealed. A list is sealed once and never resealed.'
+            : `That draw is ${draw.status}, so it cannot be frozen again. A list is sealed once and never resealed.`,
+    }),
+  },
+  {
+    // 'refusing to freeze: a display name contains a delimiter character'
+    fragment: 'delimiter character',
+    needsDraw: false,
+    refuse: () => ({
+      status: 409,
+      message:
+        'One of the verified display names contains a character that would make the sealed list ambiguous, so the freeze was refused. That name has to be corrected in the database before the list can be sealed.',
+    }),
+  },
+  {
+    // 'draw % does not exist'
+    fragment: 'does not exist',
+    needsDraw: false,
+    refuse: () => ({ status: 404, message: 'No draw with that id.' }),
+  },
+];
+
+/* raffle_execute_draw */
+const DRAW_REFUSALS: readonly RefusalRule[] = [
+  {
+    // 'draw % was frozen at %, after its seed published at %. Refusing to draw.'
+    fragment: 'after its seed published',
+    needsDraw: true,
+    refuse: (draw) => ({
+      status: 409,
+      message: sentences([
+        'This list was sealed after its seed number was already public, so this draw cannot be proved fair and the database refused to run it.',
+        draw.frozenAtLabel !== null && draw.seedAvailableLabel !== null
+          ? `The list was sealed ${draw.frozenAtLabel} and the seed published ${draw.seedAvailableLabel}.`
+          : null,
+        'Do not announce a winner. Contact whoever runs the site before you tell anybody anything.',
+      ]),
+    }),
+  },
+  {
+    // 'the seed for draw % does not publish until %. Refusing to draw early.'
+    fragment: 'does not publish until',
+    needsDraw: true,
+    refuse: (draw) => ({
+      status: 409,
+      message:
+        draw.seedAvailableLabel === null
+          ? 'The seed number has not published yet, so the draw cannot run.'
+          : sentences([
+              `The seed number does not publish until ${draw.seedAvailableLabel}, so the draw cannot run yet.`,
+              draw.seedSource === null
+                ? 'Run it once the real number is public.'
+                : `Run it once you can read the real number off the ${draw.seedSource}.`,
+            ]),
+    }),
+  },
+  {
+    // 'seed source mismatch: this draw committed to "%" and cannot be drawn from "%"'
+    fragment: 'seed source mismatch',
+    needsDraw: true,
+    refuse: (draw) => ({
+      status: 409,
+      message:
+        draw.seedSource === null
+          ? 'That is not the seed source this draw committed to, so the draw was refused.'
+          : sentences([
+              `That is not the seed source this draw committed to. It committed to the ${draw.seedSource}, and naming the source in advance is the whole point, so it cannot be swapped now.`,
+              'Leave the seed source out of the request and the published one is used.',
+            ]),
+    }),
+  },
+  {
+    // 'seed value is required'
+    fragment: 'seed value is required',
+    needsDraw: false,
+    refuse: () => ({ status: 400, message: 'A seed value is required.' }),
+  },
+  {
+    // 'draw % must be frozen before it can be drawn'. The lookup inside the
+    // function selects on id AND status, so this one raise covers a missing
+    // draw, a still open draw and a draw that already ran. The draw row is
+    // what tells the three apart.
+    fragment: 'must be frozen',
+    needsDraw: true,
+    refuse: (draw) => {
+      if (draw.status === null) return { status: 404, message: 'No draw with that id.' };
+      if (draw.status === 'drawn') {
+        return { status: 409, message: 'That draw has already been run, and a draw runs once.' };
+      }
+      if (draw.status === 'frozen') {
+        // It was not frozen when the draw ran, and it is now. Something
+        // froze it in between, so this is a retry and not a dead end.
+        return {
+          status: 409,
+          message: 'That draw was not frozen when the draw ran, so there was no sealed list to draw from. It is frozen now, so try again.',
+        };
+      }
+      return {
+        status: 409,
+        message: `That draw is ${draw.status}, so there is no sealed list to draw from. Freeze the list first.`,
+      };
+    },
+  },
+];
+
+/** First rule whose fragment appears in the message, or null. */
+export function matchRefusal(rules: readonly RefusalRule[], error: DbError): RefusalRule | null {
+  for (const rule of rules) {
+    if (says(error, rule.fragment)) return rule;
+  }
+  return null;
+}
+
+/** Exported so the raise strings in the migration can be checked against it. */
+export const RAFFLE_REFUSALS = {
+  verify: VERIFY_REFUSALS,
+  freeze: FREEZE_REFUSALS,
+  draw: DRAW_REFUSALS,
+} as const;
+
+/**
+ * Read only, and only on an error path. A failure here degrades the
+ * message, never the status code, so a refusal still reads as a
+ * refusal even if the follow up read is the thing that broke.
+ */
+async function drawContext(db: SupabaseClient, drawId: string): Promise<DrawContext> {
+  const res = await db
+    .from('raffle_draws')
+    .select('status, seed_source, seed_available_at, frozen_at')
+    .eq('id', drawId)
+    .maybeSingle();
+
+  if (res.error) {
+    logDbError('context', res.error);
+    return NO_DRAW_CONTEXT;
+  }
+  const row = res.data as DrawContextRow | null;
+  if (row === null) return NO_DRAW_CONTEXT;
+
+  return {
+    status: str(row.status) || null,
+    seedSource: str(row.seed_source) || null,
+    seedAvailableLabel: etLabel(row.seed_available_at),
+    frozenAtLabel: etLabel(row.frozen_at),
+  };
+}
+
+/**
+ * Log the raw error, then answer with the mapped refusal. Only a
+ * message that matches no known raise gets the contentless 500.
+ */
+async function refuse(
+  db: SupabaseClient,
+  drawId: string,
+  action: string,
+  error: DbError,
+  rules: readonly RefusalRule[],
+  unexpected: string,
+  origin: string | null,
+): Promise<Response> {
+  logDbError(action, error);
+
+  const rule = matchRefusal(rules, error);
+  if (rule === null) return fail(unexpected, 500, origin);
+
+  const context = rule.needsDraw ? await drawContext(db, drawId) : NO_DRAW_CONTEXT;
+  const { status, message } = rule.refuse(context);
+  return fail(message, status, origin);
 }
 
 /* ------------------------------------------------------------
@@ -312,14 +660,15 @@ async function actionVerify(
   });
 
   if (error) {
-    logDbError('verify', error);
-    if (says(error, 'already verified')) {
-      return fail('That entry is already verified and already holds ticket numbers.', 409, origin);
-    }
-    if (says(error, 'not found')) {
-      return fail('No entry with that id.', 404, origin);
-    }
-    return fail('Could not verify that entry.', 500, origin);
+    return await refuse(
+      db,
+      drawId,
+      'verify',
+      error,
+      RAFFLE_REFUSALS.verify,
+      'Could not verify that entry.',
+      origin,
+    );
   }
 
   const row = firstRow<VerifyResult>(data);
@@ -400,14 +749,15 @@ async function actionFreeze(db: SupabaseClient, drawId: string, origin: string |
   const { data, error } = await db.rpc('raffle_freeze', { p_draw_id: drawId });
 
   if (error) {
-    logDbError('freeze', error);
-    if (says(error, 'zero verified entries')) {
-      return fail('There are no verified entries to freeze.', 409, origin);
-    }
-    if (says(error, 'cannot be frozen')) {
-      return fail('That draw is not open, so it cannot be frozen again.', 409, origin);
-    }
-    return fail('Could not freeze that draw.', 500, origin);
+    return await refuse(
+      db,
+      drawId,
+      'freeze',
+      error,
+      RAFFLE_REFUSALS.freeze,
+      'Could not freeze that draw.',
+      origin,
+    );
   }
 
   const row = firstRow<FreezeResult>(data);
@@ -455,11 +805,7 @@ async function actionDraw(
   });
 
   if (error) {
-    logDbError('draw', error);
-    if (says(error, 'must be frozen')) {
-      return fail('That draw must be frozen before it can be drawn.', 409, origin);
-    }
-    return fail('Could not run that draw.', 500, origin);
+    return await refuse(db, drawId, 'draw', error, RAFFLE_REFUSALS.draw, 'Could not run that draw.', origin);
   }
 
   const row = firstRow<DrawResult>(data);

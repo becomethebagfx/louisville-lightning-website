@@ -6,12 +6,21 @@
 
    Every rule, price, date, phone number and URL in here comes
    from raffleData.ts. Supabase is reached only through
-   submitRaffleEntry in useRaffle.ts.
+   useRaffle.ts.
+
+   This component gates ITSELF. The page it sits on hides the
+   entry CTA once entries close, but a deep link to #enter, a
+   bookmarked scroll position or a tab left open overnight all
+   reach this component directly, so the deadline has to be
+   enforced here or not at all.
    ============================================================ */
 
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+  DRAW_TIME_LABEL,
+  ENTRIES_CLOSE_AT,
+  ENTRIES_CLOSE_LABEL,
   MAX_CHANCES_PER_ENTRY,
   PRICE_PER_CHANCE_CENTS,
   RAFFLE_CONTACT,
@@ -20,7 +29,12 @@ import {
   formatUsd,
   toDisplayName,
 } from '../../lib/raffleData';
-import { submitRaffleEntry, type SubmitResult } from '../../lib/useRaffle';
+import {
+  submitRaffleEntry,
+  useCountdown,
+  useRaffleDraw,
+  type SubmitResult,
+} from '../../lib/useRaffle';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -87,6 +101,102 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   );
 }
 
+/* ------------------------------------------------------------
+   What the form is replaced by once entries close. Deliberately
+   renders NO inputs: a disabled form still reads as "fill this
+   out", and step 1 of the flow is to Venmo the money first. The
+   database refuses the insert that would follow, so the money
+   would be gone with nothing to show for it.
+   ------------------------------------------------------------ */
+function EntriesClosedCard({ drawn }: { drawn: boolean }) {
+  return (
+    <motion.div
+      initial={{ y: 24, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6, ease }}
+      className="card-electric rounded-2xl p-5 sm:p-7"
+    >
+      <div className="text-center">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-gold-500/15 flex items-center justify-center">
+          <BoltIcon className="w-7 h-7 text-gold-400" />
+        </div>
+        <h3 className="text-stadium text-3xl sm:text-4xl text-gradient-gold">Entries are closed</h3>
+        <p className="mt-2 text-white/70 text-sm font-body leading-relaxed">
+          Entries closed {ENTRIES_CLOSE_LABEL}, and the form closed with them. Nothing sent on
+          Venmo after that time can be added to this raffle.
+        </p>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-gold-500/40 bg-navy-900/60 p-4">
+        <p className="font-accent uppercase tracking-[0.2em] text-[11px] text-white/45">
+          Sent the money but never got a receipt code
+        </p>
+        <p className="mt-1.5 text-sm text-white/75 font-body leading-relaxed">
+          Do not send anything else. Text Coach {CONTACT_FIRST} at{' '}
+          <a
+            href={`tel:${RAFFLE_CONTACT.phoneRaw}`}
+            className="text-gold-400 hover:text-gold-300 underline underline-offset-2 whitespace-nowrap"
+          >
+            {RAFFLE_CONTACT.phone}
+          </a>{' '}
+          and he will sort it out by hand.
+        </p>
+      </div>
+
+      <div className="mt-5 rounded-xl bg-white/5 border border-white/10 p-4 space-y-2">
+        <p className="text-sm text-white/75 font-body leading-relaxed">
+          {drawn
+            ? 'The drawing has been made. The winning number and the recording are posted on this page.'
+            : `The full numbered list gets frozen and its fingerprint published on this page. The drawing is ${DRAW_TIME_LABEL}, it is recorded, and the video goes up here afterwards.`}
+        </p>
+        <p className="text-sm text-white/60 font-body leading-relaxed">
+          Already entered? Your ticket numbers appear on the board as soon as Coach {CONTACT_FIRST}{' '}
+          matches your payment.
+        </p>
+      </div>
+
+      <div className="mt-5 flex flex-col sm:flex-row gap-2.5">
+        <a
+          href="#board"
+          className="btn-lightning-outline text-sm flex-1 inline-flex items-center justify-center gap-2"
+        >
+          See the board
+        </a>
+        <a
+          href="#receipt"
+          className="btn-lightning-outline text-sm flex-1 inline-flex items-center justify-center gap-2"
+        >
+          Check your entry
+        </a>
+      </div>
+    </motion.div>
+  );
+}
+
+/* Held up while the draw row is still in flight. The form is never painted
+   before the answer lands: a live form that vanishes a beat later is exactly
+   long enough for somebody to start a payment. */
+function FormSkeleton() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading the entry form"
+      className="card-electric rounded-2xl p-5 sm:p-7 space-y-5"
+    >
+      <div className="h-9 w-56 max-w-full rounded bg-white/10 animate-pulse" />
+      <div className="h-4 w-72 max-w-full rounded bg-white/5 animate-pulse" />
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-3 w-24 rounded bg-white/5 animate-pulse" />
+          <div className="h-12 w-full rounded-xl bg-white/10 animate-pulse" />
+        </div>
+      ))}
+      <div className="h-28 w-full rounded-xl bg-white/5 animate-pulse" />
+      <div className="h-14 w-full rounded-xl bg-white/10 animate-pulse" />
+    </div>
+  );
+}
+
 export default function RaffleEntryForm() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -100,6 +210,14 @@ export default function RaffleEntryForm() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessState | null>(null);
   const [copied, setCopied] = useState<'idle' | 'ok' | 'fail'>('idle');
+
+  /* THE GATE. Entries close at ENTRIES_CLOSE_AT, which is 19 hours before the
+     drawing, and the database stops accepting inserts at that instant. The
+     draw row is the authority over the local clock, so a device set to the
+     wrong day cannot talk its way into a live form. */
+  const { draw, loading: drawLoading } = useRaffleDraw();
+  const entriesLeft = useCountdown(ENTRIES_CLOSE_AT);
+  const entriesClosed = entriesLeft === null || (draw !== null && draw.status !== 'open');
 
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -335,6 +453,14 @@ export default function RaffleEntryForm() {
       </motion.div>
     );
   }
+
+  /* ---------------- closed, and not-yet-known ---------------- */
+
+  /* Order matters. The success panel above outranks the gate, so somebody who
+     submitted in the last minute before the deadline keeps their receipt code
+     on screen instead of watching it get replaced by a closed sign. */
+  if (entriesClosed) return <EntriesClosedCard drawn={draw?.status === 'drawn'} />;
+  if (drawLoading) return <FormSkeleton />;
 
   /* ---------------- form ---------------- */
 
