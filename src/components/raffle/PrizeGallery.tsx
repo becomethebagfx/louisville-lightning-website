@@ -12,13 +12,15 @@ const fadeUp = {
 /**
  * The two prize photos plus the spec line underneath.
  *
- * size and retailUsd are widened off the `as const` contract on purpose:
- * both are empty today (Taylor has not read the tag yet) and the line for
- * each must simply not exist until someone fills the value in. Widening
- * keeps the guard a real runtime check rather than a literal-type no-op.
+ * size, model and retailUsd are widened off the `as const` contract on
+ * purpose: each line must simply not exist until someone fills the value in.
+ * Widening keeps the guard a real runtime check rather than a literal-type
+ * no-op. size and model are now set (read off the thumb stamp 2026-08-25);
+ * retailUsd is still 0 because no price has been confirmed.
  */
 export default function PrizeGallery() {
   const size: string = PRIZE.size;
+  const model: string = PRIZE.model;
   const retailUsd: number = PRIZE.retailUsd;
 
   return (
@@ -66,9 +68,11 @@ export default function PrizeGallery() {
             {PRIZE.colorway}
           </p>
 
-          {size ? (
+          {size || model ? (
             <p className="mt-2 text-white/70 font-accent uppercase tracking-[0.18em] text-sm md:text-base">
-              Size {size}
+              {size ? `Size ${size}` : null}
+              {size && model ? <span className="text-white/30"> &middot; </span> : null}
+              {model}
             </p>
           ) : null}
 

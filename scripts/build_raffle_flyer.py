@@ -74,9 +74,10 @@ PANEL_X, PANEL_Y, PANEL_W = 243, 250, 594
 BAND_TOP, BAND_H = 905, 188
 PANEL_COVER = 100          # strip of the photo panel that the band hides
 GLOVE_PAD = 24             # minimum clear canvas px around the glove
-PRIZE_TOP, PRIZE_H = 1113, 46
-DRAW_TOP, DRAW_H = 1171, 64
-HAIRLINE_TOP = 1249
+PRIZE_TOP, PRIZE_H = 1101, 42
+SPEC_TOP, SPEC_H = 1149, 28   # size + model, read off the thumb stamp
+DRAW_TOP, DRAW_H = 1183, 60
+HAIRLINE_TOP = 1253
 SCAN_TOP, SCAN_H = 1265, 44
 QR_TOP = 1319
 URL_TOP, URL_H = 1806, 40
@@ -105,6 +106,7 @@ GLOVE_BOX = (55, 380, 1240, 1700)
 @dataclass(frozen=True)
 class RaffleFacts:
     prize_name: str
+    prize_spec: str
     price_label: str
     draw_date_label: str
     url_full: str
@@ -114,6 +116,12 @@ class RaffleFacts:
     contact_role: str
     contact_name: str
     contact_phone: str
+
+
+def _optional(pattern: str, text: str) -> str:
+    """Like _grab but a missing or empty value is legal and yields ''."""
+    m = re.search(pattern, text)
+    return m.group(1).strip() if m else ""
 
 
 def _grab(pattern: str, text: str, what: str) -> str:
@@ -150,6 +158,12 @@ def read_facts() -> RaffleFacts:
 
     return RaffleFacts(
         prize_name=_grab(r"name:\s*'([^']+)'", prize, "PRIZE.name"),
+        prize_spec=" \u00b7 ".join(
+            part for part in (
+                _optional(r"size:\s*'([^']*)'", prize),
+                _optional(r"model:\s*'([^']*)'", prize),
+            ) if part
+        ),
         price_label=format_usd(cents),
         draw_date_label=_grab(r"export const DRAW_DATE_LABEL\s*=\s*'([^']+)'", src,
                               "DRAW_DATE_LABEL"),
@@ -437,6 +451,13 @@ def build() -> tuple[RaffleFacts, list[str], tuple[float, float, float, float]]:
                      max_w=840, max_h=PRIZE_H, tracking_ratio=0.05, start=90)
     place(canvas, prize, "prize-name", center_x=W // 2, top=PRIZE_TOP)
 
+    # Size and model, straight off the thumb stamp. Skipped entirely when the
+    # contract has neither, so an unknown spec leaves no gap and no empty line.
+    if facts.prize_spec:
+        spec = fit_line(s(facts.prize_spec.upper()), DISPLAY, MUTED,
+                        max_w=760, max_h=SPEC_H, tracking_ratio=0.08, start=60)
+        place(canvas, spec, "prize-spec", center_x=W // 2, top=SPEC_TOP)
+
     word = fit_line(s("DRAWING"), DISPLAY, WHITE, max_w=340, max_h=DRAW_H, start=110)
     date = fit_line(s(poster_case(facts.draw_date_label)), DISPLAY, GOLD_500,
                     max_w=520, max_h=DRAW_H, start=110)
@@ -565,6 +586,7 @@ def verify(facts: RaffleFacts, strings: list[str],
     print("COPY, ALL OF IT PARSED OUT OF src/lib/raffleData.ts")
     print(f"  price       {facts.price_label} A CHANCE")
     print(f"  prize       {facts.prize_name}")
+    print(f"  spec        {facts.prize_spec or '(none set)'}")
     print(f"  drawing     {poster_case(facts.draw_date_label)}")
     print(f"  url         {facts.url_display}   ({facts.url_full})")
     print(f"  contact     {facts.contact_role} {facts.contact_name} {facts.contact_phone}")

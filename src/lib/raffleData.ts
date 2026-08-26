@@ -16,10 +16,15 @@ export const DRAW_ID = 'glove-2026-10-01';
 
 export const PRIZE = {
   name: 'Rawlings Heart of the Hide R2G',
-  /** Empty until Taylor reads it off the tag. Rendered only when set. */
-  size: '',
+  /** Read straight off the thumb stamp: PROR204U-4CM, 11 1/2 INCH. */
+  size: '11.5 inch',
+  model: 'PROR204U-4CM',
   colorway: 'Camel / mint green lace / pink trim',
-  /** Rendered as "a $XXX glove" social proof. Empty hides the line. */
+  /**
+   * Rendered as "a $XXX glove" social proof. Still 0 on purpose: nobody has
+   * confirmed a real number, and printing a price on a raffle is a value claim
+   * made to people handing over money. Leave it until Taylor confirms.
+   */
   retailUsd: 0,
   photos: [
     { src: '/assets/raffle/glove-palm.jpg', alt: 'Rawlings Heart of the Hide R2G glove, palm side, mint green lacing and pink trim' },
