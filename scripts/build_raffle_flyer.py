@@ -152,8 +152,8 @@ def read_facts() -> RaffleFacts:
     prize = _block("PRIZE", src)
     contact = _block("RAFFLE_CONTACT", src)
 
-    cents = int(_grab(r"export const PRICE_PER_CHANCE_CENTS\s*=\s*(\d+)", src,
-                      "PRICE_PER_CHANCE_CENTS"))
+    cents = int(_grab(r"export const PRICE_PER_TICKET_CENTS\s*=\s*(\d+)", src,
+                      "PRICE_PER_TICKET_CENTS"))
     url_full = _grab(r"export const RAFFLE_URL\s*=\s*'([^']+)'", src, "RAFFLE_URL")
     qr_rel = _grab(r"export const RAFFLE_QR_IMAGE\s*=\s*'([^']+)'", src, "RAFFLE_QR_IMAGE")
     photo_rel = _grab(r"src:\s*'([^']+)'", prize, "PRIZE.photos[0].src")
@@ -444,7 +444,7 @@ def build() -> tuple[RaffleFacts, list[str], tuple[float, float, float, float]]:
     bd.rectangle([0, BAND_TOP, W, BAND_TOP + BAND_H], fill=GOLD_500 + (255,))
     bd.rectangle([0, BAND_TOP, W, BAND_TOP + 5], fill=GOLD_300 + (255,))
     bd.rectangle([0, BAND_TOP + BAND_H - 5, W, BAND_TOP + BAND_H], fill=GOLD_DEEP + (255,))
-    price = fit_line(s(f"{facts.price_label} A CHANCE"), DISPLAY, NAVY_900,
+    price = fit_line(s(f"{facts.price_label} A TICKET"), DISPLAY, NAVY_900,
                      max_w=W - MARGIN * 2 - 40, max_h=BAND_H - 44,
                      tracking_ratio=0.02, start=400)
     place(canvas, price, "price", center_x=W // 2,
@@ -596,7 +596,7 @@ def verify(facts: RaffleFacts, strings: list[str],
         print(f"  {role:12} {name:32} {path} [face {index}]")
     print("-" * 64)
     print("COPY, ALL OF IT PARSED OUT OF src/lib/raffleData.ts")
-    print(f"  price       {facts.price_label} A CHANCE")
+    print(f"  price       {facts.price_label} A TICKET")
     print(f"  prize       {facts.prize_name}")
     print(f"  spec        {facts.prize_spec or '(none set)'}")
     print(f"  drawing     {poster_case(facts.draw_date_label)}")

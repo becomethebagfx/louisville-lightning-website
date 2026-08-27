@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import {
   DRAW_ID,
-  chancesToCents,
+  ticketsToCents,
   toDisplayName,
   generateReceiptCode,
   type RaffleBoardRow,
@@ -147,9 +147,9 @@ export async function submitRaffleEntry(args: SubmitEntryArgs): Promise<SubmitRe
   if (fullName.length > 80)
     return { ok: false, error: 'That name is too long for the entry form. Try a shorter version of it.' };
   if (!Number.isFinite(chances) || chances < 1)
-    return { ok: false, error: 'Choose at least one chance.' };
+    return { ok: false, error: 'Choose at least one ticket.' };
   if (chances > 100)
-    return { ok: false, error: 'Maximum 100 chances in a single entry. Send anything larger as a second entry.' };
+    return { ok: false, error: 'Maximum 100 tickets in a single entry. Send anything larger as a second entry.' };
   if (args.phone.replace(/\D/g, '').length < 10)
     return { ok: false, error: 'Enter a phone number so we can reach you if you win.' };
 
@@ -166,7 +166,7 @@ export async function submitRaffleEntry(args: SubmitEntryArgs): Promise<SubmitRe
     phone: args.phone.trim(),
     email: args.email.trim(),
     chances,
-    amount_cents: chancesToCents(chances),
+    amount_cents: ticketsToCents(chances),
     venmo_handle: args.venmoHandle.trim(),
     note: args.note.trim().slice(0, 280),
   });
@@ -188,7 +188,7 @@ export async function submitRaffleEntry(args: SubmitEntryArgs): Promise<SubmitRe
         ok: false,
         error: reallyClosed
           ? 'Entries for this raffle are closed. Text Coach Aaron if you think that is wrong.'
-          : 'Something in that entry was rejected. Check the name and the number of chances, then try again, or text Coach Aaron.',
+          : 'Something in that entry was rejected. Check the name and the number of tickets, then try again, or text Coach Aaron.',
       };
     }
     if (error.code === '23505')

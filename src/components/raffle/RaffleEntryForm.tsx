@@ -21,11 +21,11 @@ import {
   DRAW_TIME_LABEL,
   ENTRIES_CLOSE_AT,
   ENTRIES_CLOSE_LABEL,
-  MAX_CHANCES_PER_ENTRY,
-  PRICE_PER_CHANCE_CENTS,
+  MAX_TICKETS_PER_ENTRY,
+  PRICE_PER_TICKET_CENTS,
   RAFFLE_CONTACT,
   VENMO,
-  chancesToCents,
+  ticketsToCents,
   formatUsd,
   toDisplayName,
 } from '../../lib/raffleData';
@@ -46,7 +46,7 @@ const MAX_NAME_CHARS = 80;
 const MAX_DISPLAY_NAME_CHARS = 40;
 const MAX_NOTE_CHARS = 280;
 
-/** Convenience only. The price itself is PRICE_PER_CHANCE_CENTS. */
+/** Convenience only. The price itself is PRICE_PER_TICKET_CENTS. */
 const QUICK_PICKS = [1, 2, 3, 5, 10] as const;
 
 const CONTACT_FIRST = RAFFLE_CONTACT.name.split(' ')[0];
@@ -61,7 +61,7 @@ const LABEL_CLASS =
 interface FieldErrors {
   fullName?: string;
   phone?: string;
-  chances?: string;
+  tickets?: string;
 }
 
 interface SuccessState {
@@ -201,7 +201,7 @@ export default function RaffleEntryForm() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [chancesText, setChancesText] = useState('1');
+  const [ticketsText, setTicketsText] = useState('1');
   const [venmoHandle, setVenmoHandle] = useState('');
   const [note, setNote] = useState('');
 
@@ -221,7 +221,7 @@ export default function RaffleEntryForm() {
 
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
-  const chancesRef = useRef<HTMLInputElement>(null);
+  const ticketsRef = useRef<HTMLInputElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
   /* The submitting flag is state, so two Enter presses inside one tick would
@@ -235,12 +235,12 @@ export default function RaffleEntryForm() {
     if (success) successRef.current?.focus();
   }, [success]);
 
-  const parsed = Number.parseInt(chancesText, 10);
+  const parsed = Number.parseInt(ticketsText, 10);
   const chances = Number.isFinite(parsed) ? parsed : 0;
   /* Not clamped: the amount always describes the number actually in the
      box, so the big gold number can never contradict the input. Out of
      range is caught by validation instead. */
-  const amountCents = chancesToCents(Math.max(chances, 0));
+  const amountCents = ticketsToCents(Math.max(chances, 0));
   const trimmedName = fullName.trim();
   const derivedDisplayName = toDisplayName(fullName);
 
@@ -248,11 +248,11 @@ export default function RaffleEntryForm() {
     setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
   }
 
-  function bumpChances(delta: number) {
+  function bumpTickets(delta: number) {
     const base = Number.isFinite(parsed) ? parsed : 0;
-    const next = Math.min(Math.max(base + delta, 1), MAX_CHANCES_PER_ENTRY);
-    setChancesText(String(next));
-    clearError('chances');
+    const next = Math.min(Math.max(base + delta, 1), MAX_TICKETS_PER_ENTRY);
+    setTicketsText(String(next));
+    clearError('tickets');
   }
 
   /** Mirrors the guards in submitRaffleEntry and the SQL CHECKs. */
@@ -268,15 +268,15 @@ export default function RaffleEntryForm() {
     }
 
     if (phone.replace(/\D/g, '').length < 10) {
-      next.phone = 'Enter a phone number so we can reach you if you win.';
+      next.phone = 'We need a phone number to reach you if you win.';
     }
 
     if (!Number.isFinite(parsed) || chances < 1) {
-      next.chances = 'Choose at least one chance.';
+      next.tickets = 'Choose at least one ticket.';
     } else if (!Number.isInteger(chances)) {
-      next.chances = 'Chances have to be a whole number.';
-    } else if (chances > MAX_CHANCES_PER_ENTRY) {
-      next.chances = `Maximum ${MAX_CHANCES_PER_ENTRY} chances in a single entry.`;
+      next.tickets = 'Tickets have to be a whole number.';
+    } else if (chances > MAX_TICKETS_PER_ENTRY) {
+      next.tickets = `Maximum ${MAX_TICKETS_PER_ENTRY} tickets in a single entry.`;
     }
 
     return next;
@@ -298,8 +298,8 @@ export default function RaffleEntryForm() {
       phoneRef.current?.focus();
       return;
     }
-    if (found.chances) {
-      chancesRef.current?.focus();
+    if (found.tickets) {
+      ticketsRef.current?.focus();
       return;
     }
 
@@ -329,7 +329,7 @@ export default function RaffleEntryForm() {
     setSuccess({
       receiptCode: result.receiptCode,
       displayName: result.displayName,
-      amountCents: chancesToCents(chances),
+      amountCents: ticketsToCents(chances),
     });
   }
 
@@ -349,7 +349,7 @@ export default function RaffleEntryForm() {
     setFullName('');
     setPhone('');
     setEmail('');
-    setChancesText('1');
+    setTicketsText('1');
     setVenmoHandle('');
     setNote('');
     setErrors({});
@@ -429,8 +429,16 @@ export default function RaffleEntryForm() {
         <div className="mt-5 rounded-xl bg-white/5 border border-white/10 p-4 space-y-2">
           <p className="text-sm text-white/75 font-body leading-relaxed">
             Your entry is <span className="text-amber-300 font-semibold">PENDING</span> until Coach{' '}
-            {CONTACT_FIRST} confirms the Venmo payment. Once he does, your ticket numbers appear on
-            the board below.
+            {CONTACT_FIRST} matches the Venmo payment by hand, usually within a few hours. When he
+            does, he texts you your ticket numbers and they post on the board below.
+          </p>
+          <p className="text-sm text-white/60 font-body leading-relaxed">
+            No automatic email or text goes out, so nothing lands in a spam folder. If you want to
+            check before he gets to it, put this code into{' '}
+            <a href="#receipt" className="text-gold-400 hover:text-gold-300 underline underline-offset-2">
+              Check your entry
+            </a>{' '}
+            any time.
           </p>
           <p className="text-sm text-white/60 font-body leading-relaxed">
             Publicly you will show as{' '}
@@ -477,7 +485,7 @@ export default function RaffleEntryForm() {
       <div>
         <h3 className="text-stadium text-3xl sm:text-4xl text-gradient-gold">Enter the raffle</h3>
         <p className="mt-1.5 text-sm text-white/60 font-body leading-relaxed">
-          Send the money on Venmo, then fill this out. Both steps, or you are not entered.
+          Send the Venmo first, then fill this out.
         </p>
       </div>
 
@@ -510,7 +518,7 @@ export default function RaffleEntryForm() {
               will be shown publicly.
             </>
           ) : (
-            'Only your first name and last initial will be shown publicly.'
+            'The board shows a first name and a masked initial, nothing else.'
           )}
         </p>
       </div>
@@ -539,7 +547,7 @@ export default function RaffleEntryForm() {
         />
         <FieldError id="raffle-phone-error" message={errors.phone} />
         <p id="raffle-phone-help" className="mt-1.5 text-xs text-white/40 font-body">
-          Never shown on this page. It is how Coach {CONTACT_FIRST} reaches you if you win.
+          Never shown publicly. It is how Coach {CONTACT_FIRST} reaches you if you win.
         </p>
       </div>
 
@@ -561,10 +569,10 @@ export default function RaffleEntryForm() {
         />
       </div>
 
-      {/* Chances + amount */}
+      {/* Tickets + amount */}
       <div>
-        <label htmlFor="raffle-chances" className={LABEL_CLASS}>
-          How many chances <span className="text-red-400">*</span>
+        <label htmlFor="raffle-tickets" className={LABEL_CLASS}>
+          How many tickets <span className="text-red-400">*</span>
         </label>
 
         {/* grid, not flex-wrap: at 375px a wrapping row drops "10" onto a line of its own */}
@@ -577,8 +585,8 @@ export default function RaffleEntryForm() {
                 type="button"
                 aria-pressed={active}
                 onClick={() => {
-                  setChancesText(String(n));
-                  clearError('chances');
+                  setTicketsText(String(n));
+                  clearError('tickets');
                 }}
                 className={`py-3 rounded-xl font-accent uppercase tracking-wider text-sm font-bold border transition-all active:scale-[0.97] ${
                   active
@@ -595,39 +603,39 @@ export default function RaffleEntryForm() {
         <div className="mt-2.5 flex items-stretch gap-2">
           <button
             type="button"
-            onClick={() => bumpChances(-1)}
-            aria-label="One less chance"
+            onClick={() => bumpTickets(-1)}
+            aria-label="One less ticket"
             className="w-12 shrink-0 rounded-xl bg-navy-700 border border-white/10 text-white/70 text-xl leading-none hover:border-gold-500/40 hover:text-white active:scale-[0.97] transition-all"
           >
             &minus;
           </button>
           <input
-            id="raffle-chances"
-            ref={chancesRef}
+            id="raffle-tickets"
+            ref={ticketsRef}
             type="text"
             inputMode="numeric"
             autoComplete="off"
-            value={chancesText}
+            value={ticketsText}
             onChange={(e) => {
-              setChancesText(e.target.value.replace(/\D/g, '').slice(0, 3));
-              clearError('chances');
+              setTicketsText(e.target.value.replace(/\D/g, '').slice(0, 3));
+              clearError('tickets');
             }}
             placeholder="1"
-            aria-invalid={errors.chances ? true : undefined}
-            aria-describedby={errors.chances ? 'raffle-chances-error' : 'raffle-amount'}
+            aria-invalid={errors.tickets ? true : undefined}
+            aria-describedby={errors.tickets ? 'raffle-tickets-error' : 'raffle-amount'}
             className={`${FIELD_CLASS} text-center text-2xl font-bold font-accent`}
           />
           <button
             type="button"
-            onClick={() => bumpChances(1)}
-            aria-label="One more chance"
+            onClick={() => bumpTickets(1)}
+            aria-label="One more ticket"
             className="w-12 shrink-0 rounded-xl bg-navy-700 border border-white/10 text-white/70 text-xl leading-none hover:border-gold-500/40 hover:text-white active:scale-[0.97] transition-all"
           >
             +
           </button>
         </div>
 
-        <FieldError id="raffle-chances-error" message={errors.chances} />
+        <FieldError id="raffle-tickets-error" message={errors.tickets} />
 
         {/* The number that must not be misread */}
         <div
@@ -644,8 +652,8 @@ export default function RaffleEntryForm() {
             {formatUsd(amountCents)}
           </p>
           <p className="mt-1 text-sm text-white/60 font-body">
-            {chances === 1 ? '1 chance' : `${Math.max(chances, 0)} chances`} at{' '}
-            {formatUsd(PRICE_PER_CHANCE_CENTS)} each, to {VENMO.displayName}
+            {chances === 1 ? '1 ticket' : `${Math.max(chances, 0)} tickets`} at{' '}
+            {formatUsd(PRICE_PER_TICKET_CENTS)} each, to {VENMO.displayName}
           </p>
           <a
             href={VENMO.codeUrl}
@@ -678,8 +686,8 @@ export default function RaffleEntryForm() {
           className={FIELD_CLASS}
         />
         <p id="raffle-venmo-help" className="mt-1.5 text-xs text-white/50 font-body">
-          This is how Coach {CONTACT_FIRST} matches your payment to your entry. Without it, a
-          payment under a nickname can take a while to sort out.
+          How Coach {CONTACT_FIRST} matches the payment to you. A payment under a nickname takes
+          longer without it.
         </p>
       </div>
 
@@ -694,7 +702,7 @@ export default function RaffleEntryForm() {
           maxLength={MAX_NOTE_CHARS}
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, MAX_NOTE_CHARS))}
-          placeholder="Anything he should know"
+          placeholder="Anything Coach Aaron should know"
           className={`${FIELD_CLASS} resize-none`}
         />
         <p className="mt-1.5 text-right text-xs text-white/35 font-body">

@@ -32,9 +32,15 @@ export const PRIZE = {
   ],
 } as const;
 
-/** $10 = 1 chance. Amount sent must equal chances x this. */
-export const PRICE_PER_CHANCE_CENTS = 1000;
-export const MAX_CHANCES_PER_ENTRY = 100;
+/**
+ * $10 = 1 ticket. Amount sent must equal tickets x this.
+ *
+ * The word is TICKETS everywhere a person can read it. The database column is
+ * still named `chances` because renaming a live column mid-raffle buys nothing
+ * and risks everything; it is never rendered.
+ */
+export const PRICE_PER_TICKET_CENTS = 1000;
+export const MAX_TICKETS_PER_ENTRY = 100;
 
 /** Entries close the night before. ET, expressed as a real UTC instant. */
 export const ENTRIES_CLOSE_AT = '2026-10-01T03:59:00Z'; // Sep 30 11:59pm ET
@@ -83,15 +89,15 @@ export const RAFFLE_QR_IMAGE = '/assets/raffle/raffle-qr.png';
 /* ---------- the rules, as shown to entrants ---------- */
 
 export const RAFFLE_RULES: readonly string[] = [
-  `$10 per chance. Send any multiple of $10 and you get that many chances, $30 is 3 chances and $50 is 5. A single entry tops out at ${MAX_CHANCES_PER_ENTRY} chances, so send anything larger as a second entry.`,
-  `Send the money on Venmo to ${VENMO.displayName}, then fill out the entry form on this page. Both steps, or you are not entered.`,
-  `Your entry starts as PENDING. Coach ${RAFFLE_CONTACT.name.split(' ')[0]} checks it against the Venmo account, and once it clears you get your ticket numbers on the board below.`,
-  `Ticket numbers are assigned in the order payments are confirmed, starting at #1. Nothing is skipped and nothing is held back.`,
-  `Entries close ${ENTRIES_CLOSE_LABEL}. The full numbered list is then frozen and its fingerprint published on this page, and that happens before the ${SEED_SOURCE_LABEL} takes place. The database refuses to freeze the list once that number exists, so the list provably cannot be arranged around the answer.`,
-  `The drawing is ${DRAW_TIME_LABEL} and is recorded, and the video is posted on this page afterwards. The winning number comes from the ${SEED_SOURCE_LABEL}, a public number nobody involved with the team controls, so anyone can check the math themselves.`,
-  `Made a mistake on your entry? Do not submit it again, that just creates a second entry. Text Coach ${RAFFLE_CONTACT.name.split(' ')[0]} your receipt code and he will fix it.`,
-  `Only your first name and last initial appear publicly. Your phone number and the rest of your information are never shown on this page.`,
-  `The winner is posted here and contacted directly. Questions go to Coach ${RAFFLE_CONTACT.name}, ${RAFFLE_CONTACT.phone}.`,
+  `$10 a ticket, any multiple. $30 is 3 tickets, $50 is 5. Up to ${MAX_TICKETS_PER_ENTRY} on one entry.`,
+  `Venmo first, then the form. One without the other is not an entry.`,
+  `Coach ${RAFFLE_CONTACT.name.split(' ')[0]} matches your payment by hand, then your numbers post on the board. Give him a few hours.`,
+  `Numbers are handed out in the order payments clear, starting at #1. Nothing skipped, nothing held back.`,
+  `Entries close ${ENTRIES_CLOSE_LABEL}. The list is then locked and a fingerprint of it published here, before the ${SEED_SOURCE_LABEL} happens. The database refuses to lock the list once that number exists, so it cannot be arranged around the answer.`,
+  `The drawing is ${DRAW_TIME_LABEL}, on video, posted here. The winning number comes from that public lottery number, so anyone can check the math.`,
+  `Made a mistake? Do not re-submit, that makes a second entry. Text Coach ${RAFFLE_CONTACT.name.split(' ')[0]} your receipt code.`,
+  `The board shows a first name and a masked last initial. Your phone, email and full name are never public.`,
+  `Winner is posted here and called. Questions: Coach ${RAFFLE_CONTACT.name}, ${RAFFLE_CONTACT.phone}.`,
 ];
 
 /* ---------- data contract (matches the SQL exactly) ---------- */
@@ -101,7 +107,7 @@ export type DrawStatus = 'open' | 'frozen' | 'drawn';
 
 /** What the PUBLIC is allowed to read. No name, no phone, no email, ever. */
 export interface RaffleBoardRow {
-  display_name: string;   // "Sarah M."
+  display_name: string;   // "Sarah M***"
   ticket_start: number;
   ticket_end: number;
   chances: number;
@@ -155,9 +161,15 @@ export interface RaffleDraw {
 /* ---------- helpers ---------- */
 
 /**
- * "Sarah Mitchell" -> "Sarah M."   This is the ONLY name that ever
- * reaches a public surface. Falls back to "Lightning Fan" rather than
- * ever echoing an unparseable string back onto the page.
+ * "Sarah Mitchell" -> "Sarah M***"
+ *
+ * The ONLY name that ever reaches a public surface. The asterisks are the
+ * point: a bare "Sarah M." reads like a truncation people assume the site
+ * could un-truncate, and Brandon asked for visible masking. The first name
+ * stays so an entrant can still find their own row next to their numbers.
+ *
+ * Falls back to "Lightning Fan" rather than ever echoing an unparseable
+ * string onto the page.
  */
 export function toDisplayName(fullName: string): string {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -177,7 +189,7 @@ export function toDisplayName(fullName: string): string {
   }
 
   const initial = parts[parts.length - 1].charAt(0).toUpperCase();
-  const out = `${first} ${initial}.`;
+  const out = `${first} ${initial}***`;
   // The DB caps display_name at 40 characters and refuses pipes, angle
   // brackets and control characters. Never hand it a value it will reject.
   // eslint-disable-next-line no-control-regex
@@ -194,15 +206,15 @@ export function generateReceiptCode(): string {
   return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
 }
 
-export function chancesToCents(chances: number): number {
-  return chances * PRICE_PER_CHANCE_CENTS;
+export function ticketsToCents(tickets: number): number {
+  return tickets * PRICE_PER_TICKET_CENTS;
 }
 
 export function formatUsd(cents: number): string {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 }
 
-/** "#12" for a single chance, "#12-14" for a block. */
+/** "#12" for a single ticket, "#12-14" for a block. */
 export function formatTicketRange(start: number, end: number): string {
   return start === end ? `#${start}` : `#${start}-${end}`;
 }

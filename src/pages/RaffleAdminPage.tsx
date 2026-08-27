@@ -31,11 +31,13 @@ import {
   DRAW_ID,
   SEED_SOURCE_LABEL,
   SEED_AVAILABLE_AT,
+  ENTRIES_CLOSE_AT,
   FREEZE_DEADLINE_LABEL,
   VENMO,
-  PRICE_PER_CHANCE_CENTS,
+  PRICE_PER_TICKET_CENTS,
   DRAW_TIME_LABEL,
   ENTRIES_CLOSE_LABEL,
+  RAFFLE_URL,
   formatUsd,
   formatTicketRange,
   type RaffleStatus,
@@ -44,10 +46,38 @@ import {
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+/**
+ * The confirmation an entrant actually receives.
+ *
+ * There is no automated email or SMS in this system on purpose: sending to
+ * strangers from a number they do not recognise gets filtered as spam, and a
+ * raffle that silently fails to notify is worse than one that never promised
+ * to. So the notification is a real text from Coach Aaron's own phone, one
+ * tap, prefilled. He is already holding the phone when he taps Verify.
+ */
+function ticketTextBody(range: string, firstName: string): string {
+  const hi = firstName ? `${firstName}, you` : 'You';
+  return (
+    `${hi} are in the Louisville Lightning glove raffle. ` +
+    `Your ticket ${range.includes('-') ? 'numbers are' : 'number is'} ${range}. ` +
+    `Drawing is ${DRAW_TIME_LABEL}, live on ${RAFFLE_URL} - Coach Aaron`
+  );
+}
+
 /* The project URL is public config, not a secret. It already ships in
    the bundle via src/lib/supabase.ts. */
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/+$/, '');
 const ADMIN_ENDPOINT = `${SUPABASE_URL}/functions/v1/raffle-admin`;
+
+/* iOS Messages wants `sms:+1555...&body=`, Android wants `?body=`. Both
+   platforms accept their own separator and drop the body on the other one,
+   so pick by user agent rather than shipping a link that works on half the
+   phones. Aaron is on one phone; getting this wrong costs the whole feature. */
+const SMS_SEP = /iPhone|iPad|iPod|Macintosh/i.test(
+  typeof navigator === 'undefined' ? '' : navigator.userAgent,
+)
+  ? '&'
+  : '?';
 /* Public by design: this ships in every visitor's bundle already and grants
    nothing on the raffle tables. It exists here only to clear the edge
    gateway's JWT check. It is NOT the admin credential. */
@@ -65,6 +95,7 @@ const ANON_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY ?? '');
    drawn at all, so the console works to THIS instant.
    ------------------------------------------------------------ */
 const FREEZE_DEADLINE_MS = new Date(SEED_AVAILABLE_AT).getTime();
+const ENTRIES_CLOSE_MS = new Date(ENTRIES_CLOSE_AT).getTime();
 
 /** How often the console re-checks the wall clock against that deadline. */
 const CLOCK_TICK_MS = 30_000;
@@ -162,7 +193,7 @@ function toAdminEntry(raw: unknown): AdminEntry | null {
     note: readString(raw, ['note']),
     chances,
     amountCents:
-      readNumber(raw, ['amount_cents', 'amountCents']) ?? chances * PRICE_PER_CHANCE_CENTS,
+      readNumber(raw, ['amount_cents', 'amountCents']) ?? chances * PRICE_PER_TICKET_CENTS,
     status: readEntryStatus(raw),
     ticketStart: readNumber(raw, ['ticket_start', 'ticketStart']),
     ticketEnd: readNumber(raw, ['ticket_end', 'ticketEnd']),
@@ -428,14 +459,14 @@ export default function RaffleAdminPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [verifiedNow, setVerifiedNow] = useState<ReadonlySet<string>>(new Set<string>());
 
-  const [freezeConfirm, setFreezeConfirm] = useState('');
+  const [freezeArmed, setFreezeArmed] = useState(false);
   const [freezeBusy, setFreezeBusy] = useState(false);
   /* Not state any more: the source is fixed by the published commitment and
      the database refuses a draw that does not match it. Nothing here may
      change it, so there is no setter to misuse. */
   const seedSource = SEED_SOURCE_LABEL;
   const [seedValue, setSeedValue] = useState('');
-  const [drawConfirm, setDrawConfirm] = useState('');
+  const [drawArmed, setDrawArmed] = useState(false);
   const [drawBusy, setDrawBusy] = useState(false);
 
   /* Publishing the recording. The public page promises every entrant this
@@ -673,7 +704,7 @@ export default function RaffleAdminPage() {
     if (hash) setFrozenHash(hash);
     if (count !== null) setFrozenCount(count);
     setDrawStatus('frozen');
-    setFreezeConfirm('');
+    setFreezeArmed(false);
   }, [adminKey, claim, release, handleFailure, noteError]);
 
   const runDraw = useCallback(async () => {
@@ -699,7 +730,7 @@ export default function RaffleAdminPage() {
     if (ticket !== null) setWinningTicket(ticket);
     if (name) setWinnerName(name);
     setDrawStatus('drawn');
-    setDrawConfirm('');
+    setDrawArmed(false);
   }, [adminKey, seedSource, seedValue, claim, release, handleFailure, noteError]);
 
   const runVideo = useCallback(async () => {
@@ -777,8 +808,17 @@ export default function RaffleAdminPage() {
      cannot land. Unknown status (null) leaves the button alone: the server
      stays the authority, this only stops offering what it will refuse. */
   const ticketsClosed = drawStatus !== null && drawStatus !== 'open';
+  const entriesAreClosed = nowMs >= ENTRIES_CLOSE_MS;
 
   /* ---------- console ---------- */
+
+  /* Where the coach is in the job, painted once at the top. This screen has
+     three irreversible actions on it and the old header explained all three in
+     one paragraph of prose, which reads as three warnings rather than one
+     instruction. A person opening it wants to know which of the three is his
+     job right now. */
+  const stepNow =
+    drawStatus === 'drawn' ? 3 : drawStatus === 'frozen' ? 2 : entriesAreClosed ? 1 : 0;
 
   return (
     <div className="min-h-screen bg-navy-900 pt-16">
@@ -832,14 +872,67 @@ export default function RaffleAdminPage() {
         {/* The three dates, in the order they actually happen. The middle one
             is the one that ends the raffle if it is missed, so it is the one
             wearing the colour. */}
-        <p className="text-white/40 text-xs mt-3 leading-relaxed">
-          Match each pending entry against the {VENMO.displayName} Venmo feed, then verify it. Entries
-          close {ENTRIES_CLOSE_LABEL}.{' '}
-          <strong className="text-gold-400 font-semibold not-italic">
-            The list must be frozen by {FREEZE_DEADLINE_LABEL}.
-          </strong>{' '}
-          Drawing is {DRAW_TIME_LABEL}.
-        </p>
+        <ol className="mt-3 space-y-1.5 list-none p-0">
+          {[
+            {
+              title: 'Match the payments',
+              detail:
+                totals.pendingCount === 0
+                  ? `Nothing waiting. Entries close ${ENTRIES_CLOSE_LABEL}.`
+                  : `${totals.pendingCount} waiting on you, ${formatUsd(totals.pendingCents)} to check against the ${VENMO.displayName} Venmo feed.`,
+            },
+            {
+              title: 'Lock the list',
+              detail: `Must happen by ${FREEZE_DEADLINE_LABEL}. Miss it and the drawing cannot run.`,
+            },
+            {
+              title: 'Draw the winner',
+              detail: `${DRAW_TIME_LABEL}, on video.`,
+            },
+          ].map((step, i) => {
+            const done = i < stepNow;
+            const active = i === stepNow;
+            return (
+              <li
+                key={step.title}
+                className={`flex items-start gap-3 rounded px-3 py-2 border ${
+                  active
+                    ? 'border-gold-500/60 bg-gold-500/10'
+                    : 'border-white/[0.07] bg-navy-800/40'
+                }`}
+              >
+                <span
+                  className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-accent text-[11px] font-bold ${
+                    done
+                      ? 'bg-white/10 text-white/40'
+                      : active
+                        ? 'bg-gold-500 text-navy-900'
+                        : 'border border-white/15 text-white/40'
+                  }`}
+                >
+                  {done ? '\u2713' : i + 1}
+                </span>
+                <div className="min-w-0">
+                  <div
+                    className={`text-sm leading-tight ${
+                      done ? 'text-white/35 line-through' : active ? 'text-white' : 'text-white/55'
+                    }`}
+                  >
+                    {step.title}
+                    {active && (
+                      <span className="ml-2 font-accent uppercase tracking-widest text-[10px] text-gold-400 no-underline">
+                        Do this now
+                      </span>
+                    )}
+                  </div>
+                  <div className={`text-xs mt-0.5 ${done ? 'text-white/25' : 'text-white/45'}`}>
+                    {step.detail}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
 
         {/* Load level only. Everything a button can go wrong with is painted
             beside that button instead. */}
@@ -922,7 +1015,7 @@ export default function RaffleAdminPage() {
                         {formatUsd(entry.amountCents)}
                       </div>
                       <div className="text-white/45 text-[11px] mt-0.5">
-                        {entry.chances} x {formatUsd(PRICE_PER_CHANCE_CENTS)}
+                        {entry.chances} x {formatUsd(PRICE_PER_TICKET_CENTS)}
                       </div>
                     </div>
                   </div>
@@ -1062,7 +1155,7 @@ export default function RaffleAdminPage() {
                       {range}
                     </div>
                     <div className="text-white/45 text-xs whitespace-nowrap">
-                      {formatUsd(entry.amountCents)} · {entry.chances} chance
+                      {formatUsd(entry.amountCents)} · {entry.chances} ticket
                       {entry.chances === 1 ? '' : 's'}
                     </div>
                   </div>
@@ -1089,6 +1182,19 @@ export default function RaffleAdminPage() {
                       <span className="text-white/25 text-[11px] font-mono">{entry.receiptCode}</span>
                     )}
                   </div>
+                  {/* The only notification an entrant gets. One tap, straight
+                      into Aaron's own Messages with the numbers already
+                      written, so it arrives from a number they recognise. */}
+                  {entry.phone && entry.ticketStart !== null && (
+                    <a
+                      href={`sms:${entry.phone.replace(/[^\d+]/g, '')}${SMS_SEP}body=${encodeURIComponent(
+                        ticketTextBody(range, (entry.fullName || '').trim().split(/\s+/)[0] ?? ''),
+                      )}`}
+                      className={`${SMALL_BTN} bg-white/10 text-white hover:bg-white/20 mt-2 w-full`}
+                    >
+                      Text them their numbers
+                    </a>
+                  )}
                   {fresh && (
                     <div className="mt-1 text-gold-400 font-accent uppercase tracking-widest text-[10px]">
                       Just assigned
@@ -1165,8 +1271,8 @@ export default function RaffleAdminPage() {
         <SectionHeading title="Freeze the list" tone="text-gold-500" />
         <div className="card-electric rounded-lg p-3.5">
           <p className="text-white/55 text-sm leading-relaxed">
-            Do this once every payment is matched. It locks the numbered list and publishes a
-            fingerprint of it, so nobody can claim the list was edited afterwards.
+            Once every payment is matched. Locks the numbered list and publishes a fingerprint of
+            it, so nobody can claim it was edited afterwards.
           </p>
 
           {frozenHash ? (
@@ -1211,44 +1317,71 @@ export default function RaffleAdminPage() {
                   </div>
                 </div>
                 <p className="text-gold-100/90 text-sm leading-relaxed mt-1.5">
-                  Freeze before {FREEZE_DEADLINE_LABEL}. The {SEED_SOURCE_LABEL} publishes then, and
-                  a list sealed after the winning number exists proves nothing, so the database
-                  refuses a freeze from that moment on. Do not wait for the {DRAW_TIME_LABEL}{' '}
-                  drawing.
+                  Lock it before {FREEZE_DEADLINE_LABEL}, when the winning lottery number goes
+                  public. After that the database refuses, and the drawing cannot run. Do not wait
+                  for the {DRAW_TIME_LABEL} drawing.
                 </p>
               </div>
 
-              <label className={`${LABEL} block mt-3`} htmlFor="freeze-confirm">
-                Type FREEZE to enable
-              </label>
-              <input
-                id="freeze-confirm"
-                type="text"
-                value={freezeConfirm}
-                autoComplete="off"
-                autoCapitalize="characters"
-                onChange={(e) => setFreezeConfirm(e.target.value)}
-                placeholder="FREEZE"
-                className={`${FIELD} mt-1`}
-              />
-              <button
-                type="button"
-                onClick={() => void runFreeze()}
-                disabled={
-                  freezeBusy ||
-                  freezeConfirm.trim().toUpperCase() !== 'FREEZE' ||
-                  (drawStatus !== null && drawStatus !== 'open')
-                }
-                className={`btn-lightning text-sm w-full mt-2.5 ${
-                  freezeBusy ||
-                  freezeConfirm.trim().toUpperCase() !== 'FREEZE' ||
-                  (drawStatus !== null && drawStatus !== 'open')
-                    ? 'opacity-40 pointer-events-none'
-                    : ''
-                }`}
-              >
-                {freezeBusy ? 'Freezing' : 'Freeze the list'}
-              </button>
+              {/* Two taps, no typing. The old gate made the coach type
+                  FREEZE into a box on a phone keyboard, which is a literacy
+                  test, not a safety feature: it stops nobody who means to tap
+                  and annoys everybody who does. An arm-then-confirm strip is
+                  the same number of deliberate acts and reads at a glance. */}
+              {!freezeArmed ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    noteError(SCOPE_FREEZE, '');
+                    setFreezeArmed(true);
+                  }}
+                  disabled={freezeBusy || (drawStatus !== null && drawStatus !== 'open')}
+                  className={`btn-lightning text-sm w-full mt-3 ${
+                    freezeBusy || (drawStatus !== null && drawStatus !== 'open')
+                      ? 'opacity-40 pointer-events-none'
+                      : ''
+                  }`}
+                >
+                  Freeze the list
+                </button>
+              ) : (
+                <div className="mt-3 rounded border border-gold-500/60 bg-gold-500/10 px-3 py-3">
+                  <p className="text-white text-sm leading-relaxed">
+                    This locks {totals.pendingCount > 0 ? 'the list as it stands' : 'the list'} and
+                    publishes its fingerprint. It cannot be undone, and no ticket can be issued
+                    afterwards.
+                    {totals.pendingCount > 0 && (
+                      <>
+                        {' '}
+                        <span className="text-red-300 font-semibold">
+                          {totals.pendingCount} entr{totals.pendingCount === 1 ? 'y is' : 'ies are'} still waiting
+                          on you and will be left out.
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void runFreeze()}
+                      disabled={freezeBusy}
+                      className={`${SMALL_BTN} bg-gold-500 text-navy-900 hover:bg-gold-400 ${
+                        freezeBusy ? 'opacity-40 pointer-events-none' : ''
+                      }`}
+                    >
+                      {freezeBusy ? 'Freezing' : 'Yes, lock it now'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFreezeArmed(false)}
+                      disabled={freezeBusy}
+                      className={SMALL_GHOST}
+                    >
+                      Not yet
+                    </button>
+                  </div>
+                </div>
+              )}
               {drawStatus !== null && drawStatus !== 'open' && (
                 <p className="mt-2 text-white/40 text-xs">
                   This draw is already {drawStatus}, so it cannot be frozen again.
@@ -1319,8 +1452,8 @@ export default function RaffleAdminPage() {
           ) : (
             <>
               <p className="text-white/55 text-sm leading-relaxed">
-                The winning number is computed from a public number nobody on the team controls, so
-                anyone can recheck the math. Freeze the list first.
+                The winner comes from a public lottery number nobody on the team controls, so anyone
+                can recheck the math. Lock the list first.
               </p>
 
               {/* READ ONLY on purpose. The seed source is part of the published
@@ -1333,7 +1466,7 @@ export default function RaffleAdminPage() {
                 {seedSource}
               </div>
               <p className="mt-1 text-white/40 font-body text-xs">
-                Locked to what was published before the freeze. It cannot be changed here.
+                Fixed when the list was locked. It cannot be changed here.
               </p>
 
               <label className={`${LABEL} block mt-3`} htmlFor="seed-value">
@@ -1350,45 +1483,60 @@ export default function RaffleAdminPage() {
                 className={`${FIELD} mt-1`}
               />
 
-              <label className={`${LABEL} block mt-3`} htmlFor="draw-confirm">
-                Type DRAW to enable
-              </label>
-              <input
-                id="draw-confirm"
-                type="text"
-                value={drawConfirm}
-                autoComplete="off"
-                autoCapitalize="characters"
-                onChange={(e) => setDrawConfirm(e.target.value)}
-                placeholder="DRAW"
-                className={`${FIELD} mt-1`}
-              />
+              {!drawArmed ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    noteError(SCOPE_DRAW, '');
+                    setDrawArmed(true);
+                  }}
+                  disabled={
+                    drawBusy ||
+                    !seedValue.trim() ||
+                    (drawStatus !== null && drawStatus !== 'frozen')
+                  }
+                  className={`btn-lightning text-sm w-full mt-3 ${
+                    drawBusy || !seedValue.trim() || (drawStatus !== null && drawStatus !== 'frozen')
+                      ? 'opacity-40 pointer-events-none'
+                      : ''
+                  }`}
+                >
+                  Run the drawing
+                </button>
+              ) : (
+                <div className="mt-3 rounded border border-gold-500/60 bg-gold-500/10 px-3 py-3">
+                  <p className="text-white text-sm leading-relaxed">
+                    Drawing from{' '}
+                    <span className="text-gold-300 font-mono font-semibold">
+                      {seedValue.trim()}
+                    </span>
+                    . Check that against the published number before you tap. This posts a winner
+                    to the public page, runs once, and cannot be undone.
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void runDraw()}
+                      disabled={drawBusy}
+                      className={`${SMALL_BTN} bg-gold-500 text-navy-900 hover:bg-gold-400 ${
+                        drawBusy ? 'opacity-40 pointer-events-none' : ''
+                      }`}
+                    >
+                      {drawBusy ? 'Drawing' : 'Yes, draw the winner'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDrawArmed(false)}
+                      disabled={drawBusy}
+                      className={SMALL_GHOST}
+                    >
+                      Go back
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              <button
-                type="button"
-                onClick={() => void runDraw()}
-                disabled={
-                  drawBusy ||
-                  drawConfirm.trim().toUpperCase() !== 'DRAW' ||
-                  !seedValue.trim() ||
-                  (drawStatus !== null && drawStatus !== 'frozen')
-                }
-                className={`btn-lightning text-sm w-full mt-2.5 ${
-                  drawBusy ||
-                  drawConfirm.trim().toUpperCase() !== 'DRAW' ||
-                  !seedValue.trim() ||
-                  (drawStatus !== null && drawStatus !== 'frozen')
-                    ? 'opacity-40 pointer-events-none'
-                    : ''
-                }`}
-              >
-                {drawBusy ? 'Drawing' : 'Run the drawing'}
-              </button>
 
-              <p className="mt-2 text-white/45 text-xs leading-relaxed">
-                This writes the winner straight to the public page. It runs once and cannot be
-                undone or run again.
-              </p>
 
               {drawStatus !== null && drawStatus !== 'frozen' && (
                 <p className="mt-2 text-white/40 text-xs">
@@ -1470,7 +1618,7 @@ export default function RaffleAdminPage() {
         )}
 
         <p className="mt-8 text-white/25 text-[11px] leading-relaxed">
-          Everything on this screen is private. Only a first name and last initial ever reach the
+          Everything on this screen is private. Only a first name and a masked initial ever reach the
           public board. Do not forward this link or screenshot the address bar: the key on the end
           of it is the only thing standing between the raffle and anyone.
         </p>

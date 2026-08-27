@@ -94,12 +94,12 @@ function SealedOutResult({
   receipt,
   code,
   draw,
-  chancesLabel,
+  ticketsLabel,
 }: {
   receipt: RaffleReceipt;
   code: string;
   draw: RaffleDraw;
-  chancesLabel: string;
+  ticketsLabel: string;
 }) {
   const sealedWhen = formatWhen(draw.frozen_at);
 
@@ -107,7 +107,7 @@ function SealedOutResult({
     <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-5">
       <StatusPill tone="red">Not in the drawing</StatusPill>
       <p className="mt-3 text-white font-body">
-        <span className="font-semibold">{receipt.display_name}</span>, {chancesLabel}.
+        <span className="font-semibold">{receipt.display_name}</span>, {ticketsLabel}.
       </p>
       <p className="mt-1.5 text-sm text-red-100 font-body leading-relaxed">
         This entry was never confirmed, and the numbered list was sealed without it
@@ -138,7 +138,7 @@ function ReceiptResult({
   code: string;
   draw: RaffleDraw | null;
 }) {
-  const chancesLabel = receipt.chances === 1 ? '1 chance' : `${receipt.chances} chances`;
+  const ticketsLabel = receipt.chances === 1 ? '1 ticket' : `${receipt.chances} chances`;
 
   if (receipt.status === 'verified') {
     // Local consts so TypeScript narrows both through the ternary below.
@@ -152,10 +152,10 @@ function ReceiptResult({
           {hasTickets ? (receipt.chances === 1 ? 'Your ticket number' : 'Your ticket numbers') : 'Your entry'}
         </p>
         <p className="mt-1 text-stadium text-5xl sm:text-6xl text-gold-400 glow-gold-subtle break-words">
-          {hasTickets ? formatTicketRange(start, end) : chancesLabel}
+          {hasTickets ? formatTicketRange(start, end) : ticketsLabel}
         </p>
         <p className="mt-2 text-sm text-white/70 font-body">
-          <span className="text-white font-semibold">{receipt.display_name}</span>, {chancesLabel}.
+          <span className="text-white font-semibold">{receipt.display_name}</span>, {ticketsLabel}.
           You are on the board.
         </p>
       </div>
@@ -168,7 +168,7 @@ function ReceiptResult({
        softer of the two rather than guess. */
     if (draw && draw.status !== 'open') {
       return (
-        <SealedOutResult receipt={receipt} code={code} draw={draw} chancesLabel={chancesLabel} />
+        <SealedOutResult receipt={receipt} code={code} draw={draw} ticketsLabel={ticketsLabel} />
       );
     }
 
@@ -176,7 +176,7 @@ function ReceiptResult({
       <div className="rounded-xl border border-amber-300/60 bg-amber-400/15 p-5">
         <StatusPill tone="amber">Pending</StatusPill>
         <p className="mt-3 text-white font-body">
-          <span className="font-semibold">{receipt.display_name}</span>, {chancesLabel}.
+          <span className="font-semibold">{receipt.display_name}</span>, {ticketsLabel}.
         </p>
         <p className="mt-1.5 text-sm text-white/70 font-body leading-relaxed">
           We have your entry and are waiting on payment confirmation. Coach {CONTACT_FIRST} checks
@@ -194,7 +194,7 @@ function ReceiptResult({
     <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-5">
       <StatusPill tone="red">Rejected</StatusPill>
       <p className="mt-3 text-white font-body">
-        <span className="font-semibold">{receipt.display_name}</span>, {chancesLabel}.
+        <span className="font-semibold">{receipt.display_name}</span>, {ticketsLabel}.
       </p>
       {receipt.reject_reason ? (
         <p className="mt-1.5 text-sm text-red-100 font-body leading-relaxed">

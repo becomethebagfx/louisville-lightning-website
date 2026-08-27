@@ -68,7 +68,7 @@ export default function TicketBoard() {
             <div className="border-t border-white/10 px-4 py-3 text-center">
               {loading ? (
                 <div className="mx-auto h-4 w-56 max-w-full rounded bg-white/10 animate-pulse" />
-              ) : (
+              ) : stats.pending_entries > 0 ? (
                 <p className="text-sm text-white/60">
                   <span className="text-gold-400 font-semibold tabular-nums">
                     {stats.pending_entries}
@@ -76,7 +76,7 @@ export default function TicketBoard() {
                   {stats.pending_entries === 1 ? 'entry' : 'entries'} awaiting payment
                   confirmation
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         </motion.div>

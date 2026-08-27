@@ -34,14 +34,14 @@ import {
   VENMO,
   RAFFLE_CONTACT,
   RAFFLE_RULES,
-  PRICE_PER_CHANCE_CENTS,
-  MAX_CHANCES_PER_ENTRY,
+  PRICE_PER_TICKET_CENTS,
+  MAX_TICKETS_PER_ENTRY,
   ENTRIES_CLOSE_AT,
   ENTRIES_CLOSE_LABEL,
   FREEZE_DEADLINE_LABEL,
   DRAW_DATE_LABEL,
   DRAW_TIME_LABEL,
-  chancesToCents,
+  ticketsToCents,
   formatUsd,
 } from '../lib/raffleData';
 import { CLUB_NAME } from '../lib/tryoutData';
@@ -55,8 +55,8 @@ const fadeUp = {
 };
 
 /** Every price on this page is derived, never typed. */
-const PRICE = formatUsd(PRICE_PER_CHANCE_CENTS);
-const THREE_CHANCES = formatUsd(chancesToCents(3));
+const PRICE = formatUsd(PRICE_PER_TICKET_CENTS);
+const THREE_TICKETS = formatUsd(ticketsToCents(3));
 const CONTACT_FIRST = RAFFLE_CONTACT.name.split(' ')[0];
 
 function BoltIcon({ className }: { className?: string }) {
@@ -164,44 +164,23 @@ function LinkCard({ href, title, children }: { href: string; title: string; chil
 function HowToEnter() {
   return (
     <section className="relative bg-navy-900 py-12 md:py-16 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <motion.div {...fadeUp} transition={{ duration: 0.8, ease }} className="text-center">
           <h2 className="text-stadium text-3xl md:text-5xl">
-            <span className="text-white">How to</span>{' '}
-            <span className="text-gradient-gold">Enter</span>
+            <span className="text-white">Two</span>{' '}
+            <span className="text-gradient-gold">Steps</span>
           </h2>
-          <p className="mt-3 text-white/60 max-w-xl mx-auto">
-            Two things have to happen, and both of them are on you. Send the money, then fill out
-            the form.
-          </p>
-        </motion.div>
-
-        {/* The one thing people get wrong. Say it before the steps, not after. */}
-        <motion.div
-          {...fadeUp}
-          transition={{ duration: 0.8, delay: 0.1, ease }}
-          className="mt-7 rounded-lg border-2 border-gold-500 bg-gold-500/10 p-5 md:p-6 flex items-start gap-3"
-        >
-          <BoltIcon className="w-5 h-5 mt-0.5 text-gold-500 flex-shrink-0" />
-          <p className="text-white text-sm md:text-base leading-relaxed">
-            <span className="text-stadium text-lg md:text-xl text-gold-500 tracking-wide">
-              Both steps are required.
-            </span>{' '}
-            A Venmo payment with no entry form does not get a ticket number, and an entry form with
-            no Venmo payment does not get one either. Do step 1, then do step 2.
+          <p className="mt-3 text-white/60">
+            Do both. One without the other is not an entry.
           </p>
         </motion.div>
 
         <ol className="mt-8 space-y-5 list-none p-0">
-          <StepCard n={1} delay={0.1} title={`Send ${PRICE} per chance on Venmo`}>
+          <StepCard n={1} delay={0.1} title={`Send ${PRICE} a ticket on Venmo`}>
             <p>
-              Send it to{' '}
-              <span className="text-gold-500 font-semibold">{VENMO.displayName}</span>. Any multiple
-              counts: {PRICE} is one chance, {THREE_CHANCES} is three. Up to{' '}
-              {MAX_CHANCES_PER_ENTRY} chances on a single entry.
-            </p>
-            <p className="mt-2 text-white/50 text-sm">
-              The account belongs to {VENMO.accountOwner}. Check that name before you send anything.
+              To <span className="text-gold-500 font-semibold">{VENMO.displayName}</span>, the
+              account for {VENMO.accountOwner}. {THREE_TICKETS} is three tickets, and so on up to{' '}
+              {MAX_TICKETS_PER_ENTRY}.
             </p>
 
             <div className="mt-5 flex flex-col sm:flex-row items-center gap-5">
@@ -224,41 +203,38 @@ function HowToEnter() {
                   Open Venmo
                 </a>
                 <p className="mt-3 text-white/50 text-sm">
-                  Point your phone camera at the code, or tap the button and Venmo opens on the
-                  right account.
+                  Scan the code, or tap the button on your phone.
                 </p>
               </div>
             </div>
           </StepCard>
 
-          <StepCard n={2} delay={0.2} title="Fill out the entry form below">
+          <StepCard n={2} delay={0.2} title="Fill out the form below">
             <p>
-              The form is the only way Coach {CONTACT_FIRST} can match a Venmo payment to a person.
-              It takes about thirty seconds and it hands you a receipt code, so screenshot that code
-              when it shows up.
+              Thirty seconds. It is the only way Coach {CONTACT_FIRST} can match your Venmo payment
+              to you, and it hands you a receipt code. Screenshot the code.
             </p>
             <a
               href="#enter"
               className="btn-lightning-outline text-sm inline-flex items-center gap-2 mt-4"
             >
-              Jump to the form
-            </a>
-          </StepCard>
-
-          <StepCard n={3} delay={0.3} title="Watch for your ticket numbers on the board">
-            <p>
-              Your entry starts as pending. Once the payment is matched it flips to verified and
-              your ticket numbers post on the board on this page. Only a first name and a last
-              initial ever appear there.
-            </p>
-            <a
-              href="#board"
-              className="btn-lightning-outline text-sm inline-flex items-center gap-2 mt-4"
-            >
-              See the board
+              Go to the form
             </a>
           </StepCard>
         </ol>
+
+        {/* Step 3 is waiting, not doing. It does not need a card. */}
+        <motion.p
+          {...fadeUp}
+          transition={{ duration: 0.8, delay: 0.3, ease }}
+          className="mt-6 text-center text-white/55 text-sm md:text-base"
+        >
+          Coach {CONTACT_FIRST} checks it against Venmo by hand, then your numbers post on{' '}
+          <a href="#board" className="text-gold-500 underline underline-offset-4 hover:text-gold-400">
+            the ticket board
+          </a>
+          .
+        </motion.p>
       </div>
     </section>
   );
@@ -285,7 +261,7 @@ function EntriesClosedNotice({ drawn }: { drawn: boolean }) {
             <span className="text-gradient-gold">Any More Money</span>
           </h2>
           <p className="mt-3 text-white/60 max-w-xl mx-auto">
-            Entries closed {ENTRIES_CLOSE_LABEL}, and the Venmo instructions came down with them.
+            Entries closed {ENTRIES_CLOSE_LABEL}.
           </p>
         </motion.div>
 
@@ -297,11 +273,10 @@ function EntriesClosedNotice({ drawn }: { drawn: boolean }) {
           <BoltIcon className="w-5 h-5 mt-0.5 text-gold-500 flex-shrink-0" />
           <p className="text-white text-sm md:text-base leading-relaxed">
             <span className="text-stadium text-lg md:text-xl text-gold-500 tracking-wide">
-              Nothing sent now can buy a chance.
+              Nothing sent now can buy a ticket.
             </span>{' '}
-            The raffle stopped taking entries at the deadline, so a payment made after it gets no
-            ticket number and Coach {CONTACT_FIRST} has to send it back by hand. Please do not send
-            one.
+            Anything sent after the deadline gets no ticket number and Coach {CONTACT_FIRST} has to
+            send it back by hand.
           </p>
         </motion.div>
 
@@ -310,8 +285,8 @@ function EntriesClosedNotice({ drawn }: { drawn: boolean }) {
           transition={{ duration: 0.8, delay: 0.15, ease }}
           className="mt-5 text-white/55 text-sm md:text-base text-center max-w-xl mx-auto"
         >
-          Paid before the deadline but never got a receipt code? The panel below tells you exactly
-          what to do about it.
+          Paid before the deadline but never got a receipt code? The panel below tells you what to
+          do.
         </motion.p>
 
         <motion.div
@@ -320,7 +295,7 @@ function EntriesClosedNotice({ drawn }: { drawn: boolean }) {
           className="mt-8 grid gap-4 sm:grid-cols-3"
         >
           <LinkCard href="#board" title="The ticket board">
-            Every confirmed entry and the numbers it holds, first name and last initial only.
+            Every confirmed entry and the numbers it holds.
           </LinkCard>
           <LinkCard href="#receipt" title="Check your entry">
             Put in your receipt code to see whether your payment is matched and which numbers are
@@ -405,7 +380,7 @@ export default function RafflePage() {
               {PRICE}
             </span>
             <span className="mt-2 text-stadium text-3xl sm:text-4xl md:text-5xl text-white tracking-[0.12em] leading-none">
-              a chance
+              a ticket
             </span>
           </motion.div>
 
@@ -445,7 +420,7 @@ export default function RafflePage() {
                   )}
                 </p>
                 <p className="mt-2 text-white/50 text-sm">
-                  Thank you to everybody who bought a chance.
+                  Thank you to everybody who bought a ticket.
                 </p>
               </div>
             ) : (
@@ -513,35 +488,38 @@ export default function RafflePage() {
           <DrawResult />
         </section>
 
-        {/* ---------- 8. RULES ---------- */}
-        <section id="rules" className="relative bg-navy-900 py-12 md:py-16 px-4 scroll-mt-20">
+        {/* ---------- 8. RULES ----------
+            Collapsed by default. Nine rules is the right amount of rule and
+            the wrong amount of wall: open, it pushed the contact card below
+            three screens of text nobody reads until something goes wrong.
+            Native <details> so it needs no state and works with the page
+            search a person uses to find the one line they care about. */}
+        <section id="rules" className="relative bg-navy-900 py-10 md:py-14 px-4 scroll-mt-20">
           <div className="max-w-3xl mx-auto">
-            <motion.h2
-              {...fadeUp}
-              transition={{ duration: 0.8, ease }}
-              className="text-stadium text-3xl md:text-5xl text-center"
-            >
-              <span className="text-white">The</span>{' '}
-              <span className="text-gradient-gold">Rules</span>
-            </motion.h2>
-
-            <motion.div
-              {...fadeUp}
-              transition={{ duration: 0.8, delay: 0.1, ease }}
-              className="mt-8 card-electric rounded-lg p-6 md:p-8"
-            >
-              <ol className="space-y-5 list-none p-0">
-                {RAFFLE_RULES.map((rule, i) => (
-                  <li key={i} className="flex items-start gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full border border-gold-500/50 text-gold-500 font-accent font-bold text-sm flex items-center justify-center">
-                      {i + 1}
-                    </span>
-                    <p className="flex-1 min-w-0 pt-1 text-white/70 text-sm md:text-base leading-relaxed">
-                      {rule}
-                    </p>
-                  </li>
-                ))}
-              </ol>
+            <motion.div {...fadeUp} transition={{ duration: 0.8, ease }}>
+              <details className="card-electric rounded-lg group">
+                <summary className="cursor-pointer list-none p-5 md:p-6 flex items-center justify-between gap-4">
+                  <span className="text-stadium text-2xl md:text-3xl text-white group-open:text-gold-500 transition-colors">
+                    The fine print
+                  </span>
+                  <span className="flex-shrink-0 font-accent uppercase tracking-widest text-[11px] text-gold-500/80">
+                    <span className="group-open:hidden">Read the rules</span>
+                    <span className="hidden group-open:inline">Hide</span>
+                  </span>
+                </summary>
+                <ol className="px-5 md:px-6 pb-6 space-y-3.5 list-none">
+                  {RAFFLE_RULES.map((rule, i) => (
+                    <li key={i} className="flex items-start gap-3.5">
+                      <span className="flex-shrink-0 w-7 h-7 rounded-full border border-gold-500/50 text-gold-500 font-accent font-bold text-xs flex items-center justify-center">
+                        {i + 1}
+                      </span>
+                      <p className="flex-1 min-w-0 pt-0.5 text-white/70 text-sm leading-relaxed">
+                        {rule}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </details>
             </motion.div>
           </div>
         </section>
