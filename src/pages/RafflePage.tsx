@@ -125,15 +125,20 @@ function StepCard({
   return (
     <motion.li {...fadeUp} transition={{ duration: 0.8, delay, ease }}>
       <div className="card-electric rounded-lg p-6 md:p-7 h-full">
-        <div className="flex items-start gap-4">
+        {/* The number and the title share a row; the BODY sits below at full
+            card width. It used to be a second column indented past the badge,
+            which meant the QR code and the Open Venmo button centred on that
+            column and read as pushed right inside the card. Anything centred
+            in here is now centred on the card itself. */}
+        <div className="flex items-center gap-4">
           <span className="flex-shrink-0 w-11 h-11 rounded-full bg-gold-500 text-navy-900 text-stadium text-2xl flex items-center justify-center leading-none pt-1">
             {n}
           </span>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-stadium text-xl md:text-2xl text-white leading-tight">{title}</h3>
-            <div className="mt-3 text-white/70 text-sm md:text-base">{children}</div>
-          </div>
+          <h3 className="min-w-0 flex-1 text-stadium text-xl md:text-2xl text-white leading-tight">
+            {title}
+          </h3>
         </div>
+        <div className="mt-4 text-white/70 text-sm md:text-base">{children}</div>
       </div>
     </motion.li>
   );
