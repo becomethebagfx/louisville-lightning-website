@@ -138,7 +138,7 @@ function ReceiptResult({
   code: string;
   draw: RaffleDraw | null;
 }) {
-  const ticketsLabel = receipt.chances === 1 ? '1 ticket' : `${receipt.chances} chances`;
+  const ticketsLabel = receipt.chances === 1 ? '1 ticket' : `${receipt.chances} tickets`;
 
   if (receipt.status === 'verified') {
     // Local consts so TypeScript narrows both through the ternary below.
