@@ -429,16 +429,15 @@ export default function RaffleEntryForm() {
         <div className="mt-5 rounded-xl bg-white/5 border border-white/10 p-4 space-y-2">
           <p className="text-sm text-white/75 font-body leading-relaxed">
             Your entry is <span className="text-amber-300 font-semibold">PENDING</span> until Coach{' '}
-            {CONTACT_FIRST} matches the Venmo payment by hand, usually within a few hours. When he
-            does, he texts you your ticket numbers and they post on the board below.
+            {CONTACT_FIRST} matches the Venmo payment by hand, usually within a few hours. Your
+            ticket numbers post on the board below as soon as he does.
           </p>
           <p className="text-sm text-white/60 font-body leading-relaxed">
-            No automatic email or text goes out, so nothing lands in a spam folder. If you want to
-            check before he gets to it, put this code into{' '}
+            Nothing gets emailed or texted to you, so keep this code. Put it into{' '}
             <a href="#receipt" className="text-gold-400 hover:text-gold-300 underline underline-offset-2">
               Check your entry
             </a>{' '}
-            any time.
+            any time to see where your entry stands.
           </p>
           <p className="text-sm text-white/60 font-body leading-relaxed">
             Publicly you will show as{' '}

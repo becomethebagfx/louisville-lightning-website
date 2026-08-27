@@ -37,7 +37,6 @@ import {
   PRICE_PER_TICKET_CENTS,
   DRAW_TIME_LABEL,
   ENTRIES_CLOSE_LABEL,
-  RAFFLE_URL,
   formatUsd,
   formatTicketRange,
   type RaffleStatus,
@@ -46,38 +45,11 @@ import {
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-/**
- * The confirmation an entrant actually receives.
- *
- * There is no automated email or SMS in this system on purpose: sending to
- * strangers from a number they do not recognise gets filtered as spam, and a
- * raffle that silently fails to notify is worse than one that never promised
- * to. So the notification is a real text from Coach Aaron's own phone, one
- * tap, prefilled. He is already holding the phone when he taps Verify.
- */
-function ticketTextBody(range: string, firstName: string): string {
-  const hi = firstName ? `${firstName}, you` : 'You';
-  return (
-    `${hi} are in the Louisville Lightning glove raffle. ` +
-    `Your ticket ${range.includes('-') ? 'numbers are' : 'number is'} ${range}. ` +
-    `Drawing is ${DRAW_TIME_LABEL}, live on ${RAFFLE_URL} - Coach Aaron`
-  );
-}
-
 /* The project URL is public config, not a secret. It already ships in
    the bundle via src/lib/supabase.ts. */
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/+$/, '');
 const ADMIN_ENDPOINT = `${SUPABASE_URL}/functions/v1/raffle-admin`;
 
-/* iOS Messages wants `sms:+1555...&body=`, Android wants `?body=`. Both
-   platforms accept their own separator and drop the body on the other one,
-   so pick by user agent rather than shipping a link that works on half the
-   phones. Aaron is on one phone; getting this wrong costs the whole feature. */
-const SMS_SEP = /iPhone|iPad|iPod|Macintosh/i.test(
-  typeof navigator === 'undefined' ? '' : navigator.userAgent,
-)
-  ? '&'
-  : '?';
 /* Public by design: this ships in every visitor's bundle already and grants
    nothing on the raffle tables. It exists here only to clear the edge
    gateway's JWT check. It is NOT the admin credential. */
@@ -1182,19 +1154,6 @@ export default function RaffleAdminPage() {
                       <span className="text-white/25 text-[11px] font-mono">{entry.receiptCode}</span>
                     )}
                   </div>
-                  {/* The only notification an entrant gets. One tap, straight
-                      into Aaron's own Messages with the numbers already
-                      written, so it arrives from a number they recognise. */}
-                  {entry.phone && entry.ticketStart !== null && (
-                    <a
-                      href={`sms:${entry.phone.replace(/[^\d+]/g, '')}${SMS_SEP}body=${encodeURIComponent(
-                        ticketTextBody(range, (entry.fullName || '').trim().split(/\s+/)[0] ?? ''),
-                      )}`}
-                      className={`${SMALL_BTN} bg-white/10 text-white hover:bg-white/20 mt-2 w-full`}
-                    >
-                      Text them their numbers
-                    </a>
-                  )}
                   {fresh && (
                     <div className="mt-1 text-gold-400 font-accent uppercase tracking-widest text-[10px]">
                       Just assigned
