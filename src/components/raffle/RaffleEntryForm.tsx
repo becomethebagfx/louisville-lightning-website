@@ -23,7 +23,6 @@ import {
   ENTRIES_CLOSE_LABEL,
   MAX_TICKETS_PER_ENTRY,
   PRICE_PER_TICKET_CENTS,
-  RAFFLE_CONTACT,
   VENMO,
   ticketsToCents,
   formatUsd,
@@ -49,7 +48,6 @@ const MAX_NOTE_CHARS = 280;
 /** Convenience only. The price itself is PRICE_PER_TICKET_CENTS. */
 const QUICK_PICKS = [1, 2, 3, 5, 10] as const;
 
-const CONTACT_FIRST = RAFFLE_CONTACT.name.split(' ')[0];
 
 /* text-base, not text-sm: anything under 16px makes iOS Safari zoom
    the viewport the moment the field is focused. */
@@ -132,14 +130,11 @@ function EntriesClosedCard({ drawn }: { drawn: boolean }) {
           Sent the money but never got a receipt code
         </p>
         <p className="mt-1.5 text-sm text-white/75 font-body leading-relaxed">
-          Do not send anything else. Text Coach {CONTACT_FIRST} at{' '}
-          <a
-            href={`tel:${RAFFLE_CONTACT.phoneRaw}`}
-            className="text-gold-400 hover:text-gold-300 underline underline-offset-2 whitespace-nowrap"
-          >
-            {RAFFLE_CONTACT.phone}
+          Do not send anything else. Get in touch using the number at the{' '}
+          <a href="#contact" className="text-gold-400 hover:text-gold-300 underline underline-offset-2">
+            bottom of this page
           </a>{' '}
-          and he will sort it out by hand.
+          and we will sort it out by hand.
         </p>
       </div>
 
@@ -150,8 +145,8 @@ function EntriesClosedCard({ drawn }: { drawn: boolean }) {
             : `The full numbered list gets frozen and its fingerprint published on this page. The drawing is ${DRAW_TIME_LABEL}, it is recorded, and the video goes up here afterwards.`}
         </p>
         <p className="text-sm text-white/60 font-body leading-relaxed">
-          Already entered? Your ticket numbers appear on the board as soon as Coach {CONTACT_FIRST}{' '}
-          matches your payment.
+          Already entered? Your ticket numbers appear on the board as soon as we match your
+          payment.
         </p>
       </div>
 
@@ -411,8 +406,7 @@ export default function RaffleEntryForm() {
             {formatUsd(success.amountCents)}
           </p>
           <p className="mt-1 text-sm text-white/70 font-body">
-            on Venmo to <span className="text-white">{VENMO.displayName}</span>, the account owned by{' '}
-            {VENMO.accountOwner}.
+            on Venmo to <span className="text-white">{VENMO.displayName}</span>.
           </p>
           <a
             href={VENMO.codeUrl}
@@ -428,9 +422,9 @@ export default function RaffleEntryForm() {
         {/* What happens next */}
         <div className="mt-5 rounded-xl bg-white/5 border border-white/10 p-4 space-y-2">
           <p className="text-sm text-white/75 font-body leading-relaxed">
-            Your entry is <span className="text-amber-300 font-semibold">PENDING</span> until Coach{' '}
-            {CONTACT_FIRST} matches the Venmo payment by hand, usually within a few hours. Your
-            ticket numbers post on the board below as soon as he does.
+            Your entry is <span className="text-amber-300 font-semibold">PENDING</span> until we
+            match the Venmo payment by hand, usually within a few hours. Your ticket numbers post
+            on the board below as soon as we do.
           </p>
           <p className="text-sm text-white/60 font-body leading-relaxed">
             Nothing gets emailed or texted to you, so keep this code. Put it into{' '}
@@ -442,11 +436,7 @@ export default function RaffleEntryForm() {
           <p className="text-sm text-white/60 font-body leading-relaxed">
             Publicly you will show as{' '}
             <span className="text-gold-400 font-semibold">{success.displayName}</span> and nothing
-            else. Questions go to Coach {RAFFLE_CONTACT.name},{' '}
-            <a href={`tel:${RAFFLE_CONTACT.phoneRaw}`} className="text-gold-400 hover:text-gold-300 underline underline-offset-2">
-              {RAFFLE_CONTACT.phone}
-            </a>
-            .
+            else.
           </p>
         </div>
 
@@ -546,7 +536,7 @@ export default function RaffleEntryForm() {
         />
         <FieldError id="raffle-phone-error" message={errors.phone} />
         <p id="raffle-phone-help" className="mt-1.5 text-xs text-white/40 font-body">
-          Never shown publicly. It is how Coach {CONTACT_FIRST} reaches you if you win.
+          Never shown publicly. It is how we reach you if you win.
         </p>
       </div>
 
@@ -685,15 +675,14 @@ export default function RaffleEntryForm() {
           className={FIELD_CLASS}
         />
         <p id="raffle-venmo-help" className="mt-1.5 text-xs text-white/50 font-body">
-          How Coach {CONTACT_FIRST} matches the payment to you. A payment under a nickname takes
-          longer without it.
+          How we match the payment to you. A payment under a nickname takes longer without it.
         </p>
       </div>
 
       {/* Note */}
       <div>
         <label htmlFor="raffle-note" className={LABEL_CLASS}>
-          Note for the coach <span className="text-white/25">(optional)</span>
+          Note <span className="text-white/25">(optional)</span>
         </label>
         <textarea
           id="raffle-note"
@@ -701,7 +690,7 @@ export default function RaffleEntryForm() {
           maxLength={MAX_NOTE_CHARS}
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, MAX_NOTE_CHARS))}
-          placeholder="Anything Coach Aaron should know"
+          placeholder="Anything we should know"
           className={`${FIELD_CLASS} resize-none`}
         />
         <p className="mt-1.5 text-right text-xs text-white/35 font-body">
@@ -742,7 +731,7 @@ export default function RaffleEntryForm() {
       </button>
 
       <p className="text-center text-xs text-white/40 font-body">
-        Entries stay PENDING until Coach {CONTACT_FIRST} confirms the Venmo payment.
+        Entries stay PENDING until we confirm the Venmo payment.
       </p>
     </motion.form>
   );

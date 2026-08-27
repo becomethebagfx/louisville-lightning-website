@@ -9,7 +9,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  RAFFLE_CONTACT,
   formatTicketRange,
   type RaffleDraw,
   type RaffleReceipt,
@@ -18,7 +17,6 @@ import { lookupReceipt, useRaffleDraw } from '../../lib/useRaffle';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-const CONTACT_FIRST = RAFFLE_CONTACT.name.split(' ')[0];
 
 /** Codes are six characters. A little slack for a pasted code with a stray space. */
 const MAX_CODE_CHARS = 12;
@@ -44,15 +42,21 @@ function formatWhen(iso: string | null): string | null {
   });
 }
 
-function CoachLine({ lead }: { lead: string }) {
+/**
+ * Every dead end on this page needs a human, and each one used to print the
+ * coach's name and phone number inline. That put his number on the page four
+ * separate times. One contact block lives at the bottom now; these point at
+ * it instead of repeating it.
+ */
+function ContactLine({ lead }: { lead: string }) {
   return (
     <p className="text-sm text-white/60 font-body leading-relaxed">
-      {lead} Coach {RAFFLE_CONTACT.name} at{' '}
+      {lead}{' '}
       <a
-        href={`tel:${RAFFLE_CONTACT.phoneRaw}`}
-        className="text-gold-400 hover:text-gold-300 underline underline-offset-2 whitespace-nowrap"
+        href="#contact"
+        className="text-gold-400 hover:text-gold-300 underline underline-offset-2"
       >
-        {RAFFLE_CONTACT.phone}
+        the bottom of this page
       </a>
       .
     </p>
@@ -116,14 +120,13 @@ function SealedOutResult({
         {draw.status === 'drawn' ? ', which has already been held' : ''}.
       </p>
       <p className="mt-2.5 text-sm text-white/70 font-body leading-relaxed">
-        Do not submit it again. Text Coach {CONTACT_FIRST} this receipt code so he can
-        look into it:
+        Do not submit it again. Send us this receipt code and we will look into it:
       </p>
       <p className="mt-2 font-mono tracking-[0.2em] text-lg text-gold-300 break-all select-all">
         {code}
       </p>
       <div className="mt-3">
-        <CoachLine lead="Send it to" />
+        <ContactLine lead="Send it to the number at" />
       </div>
     </div>
   );
@@ -179,12 +182,12 @@ function ReceiptResult({
           <span className="font-semibold">{receipt.display_name}</span>, {ticketsLabel}.
         </p>
         <p className="mt-1.5 text-sm text-white/70 font-body leading-relaxed">
-          We have your entry and are waiting on payment confirmation. Coach {CONTACT_FIRST} checks
-          it against the Venmo account by hand. Ticket numbers show up here, and on the board, the
-          moment it clears.
+          We have your entry and are waiting on payment confirmation. We check every one against
+          the Venmo account by hand. Ticket numbers show up here, and on the board, the moment it
+          clears.
         </p>
         <div className="mt-3">
-          <CoachLine lead="Sent it a while ago? Text" />
+          <ContactLine lead="Sent it a while ago? Our number is at" />
         </div>
       </div>
     );
@@ -206,7 +209,7 @@ function ReceiptResult({
         </p>
       )}
       <div className="mt-3">
-        <CoachLine lead="If that looks wrong, text" />
+        <ContactLine lead="If that looks wrong, our number is at" />
       </div>
     </div>
   );
@@ -323,7 +326,7 @@ export default function ReceiptLookup() {
                   zero.
                 </p>
                 <div className="mt-3">
-                  <CoachLine lead="Still stuck? Text" />
+                  <ContactLine lead="Still stuck? Our number is at" />
                 </div>
               </div>
             )}

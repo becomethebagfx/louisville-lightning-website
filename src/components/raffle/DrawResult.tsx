@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
-  RAFFLE_CONTACT,
   SEED_SOURCE_LABEL,
   type RaffleBoardRow,
   type RaffleDraw,
@@ -387,8 +386,8 @@ function WinnerName({ winningTicket }: { winningTicket: number }) {
   if (!holder) {
     return (
       <div className="mt-4 text-white/60 font-body text-base max-w-md mx-auto">
-        This number does not fall inside any published block. Coach{' '}
-        {RAFFLE_CONTACT.name} is reviewing it before anything is awarded.
+        This number does not fall inside any published block. We are reviewing it before
+        anything is awarded.
       </div>
     );
   }

@@ -71,6 +71,13 @@ export const VENMO = {
   /** Venmo's own QR target, straight off Taylor's profile. */
   codeUrl: 'https://venmo.com/code?user_id=4667355036648975849&created=1787160475.927356&printed=1',
   qrImage: '/assets/raffle/venmo-qr.png',
+  /**
+   * NOT RENDERED ANYWHERE, deliberately. Brandon took the owner's name off the
+   * public page 2026-08-27: the Venmo card is white and yellow and says
+   * "Louisville Lightning Yellow", and that plus the QR is the whole
+   * verification a person needs. Kept here so whoever picks this up later
+   * knows whose account the money lands in. Do not put it back on the page.
+   */
   accountOwner: 'Taylor Davis',
 } as const;
 
@@ -91,13 +98,13 @@ export const RAFFLE_QR_IMAGE = '/assets/raffle/raffle-qr.png';
 export const RAFFLE_RULES: readonly string[] = [
   `$10 a ticket, any multiple. $30 is 3 tickets, $50 is 5. Up to ${MAX_TICKETS_PER_ENTRY} on one entry.`,
   `Venmo first, then the form. One without the other is not an entry.`,
-  `Coach ${RAFFLE_CONTACT.name.split(' ')[0]} matches your payment by hand, then your numbers post on the board. Give him a few hours.`,
+  `We match every payment by hand, then your numbers post on the board. Give us a few hours.`,
   `Numbers are handed out in the order payments clear, starting at #1. Nothing skipped, nothing held back.`,
   `Entries close ${ENTRIES_CLOSE_LABEL}. The list is then locked and a fingerprint of it published here, before the ${SEED_SOURCE_LABEL} happens. The database refuses to lock the list once that number exists, so it cannot be arranged around the answer.`,
   `The drawing is ${DRAW_TIME_LABEL}, on video, posted here. The winning number comes from that public lottery number, so anyone can check the math.`,
-  `Made a mistake? Do not re-submit, that makes a second entry. Text Coach ${RAFFLE_CONTACT.name.split(' ')[0]} your receipt code.`,
+  `Made a mistake? Do not re-submit, that makes a second entry. Send us your receipt code and we will fix it.`,
   `The board shows a first name and a masked last initial. Your phone, email and full name are never public.`,
-  `Winner is posted here and called. Questions: Coach ${RAFFLE_CONTACT.name}, ${RAFFLE_CONTACT.phone}.`,
+  `Winner is posted here and contacted directly. Questions go to the number at the bottom of this page.`,
 ];
 
 /* ---------- data contract (matches the SQL exactly) ---------- */

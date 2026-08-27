@@ -183,9 +183,8 @@ function HowToEnter() {
         <ol className="mt-8 space-y-5 list-none p-0">
           <StepCard n={1} delay={0.1} title={`Send ${PRICE} a ticket on Venmo`}>
             <p>
-              To <span className="text-gold-500 font-semibold">{VENMO.displayName}</span>, the
-              account for {VENMO.accountOwner}. {THREE_TICKETS} is three tickets, and so on up to{' '}
-              {MAX_TICKETS_PER_ENTRY}.
+              To <span className="text-gold-500 font-semibold">{VENMO.displayName}</span>.{' '}
+              {THREE_TICKETS} is three tickets, and so on up to {MAX_TICKETS_PER_ENTRY}.
             </p>
 
             <div className="mt-5 flex flex-col sm:flex-row items-center gap-5">
@@ -216,8 +215,8 @@ function HowToEnter() {
 
           <StepCard n={2} delay={0.2} title="Fill out the form below">
             <p>
-              Thirty seconds. It is the only way Coach {CONTACT_FIRST} can match your Venmo payment
-              to you, and it hands you a receipt code. Screenshot the code.
+              Thirty seconds. It is the only way we can match your Venmo payment to you, and it
+              hands you a receipt code. Screenshot the code.
             </p>
             <a
               href="#enter"
@@ -234,7 +233,7 @@ function HowToEnter() {
           transition={{ duration: 0.8, delay: 0.3, ease }}
           className="mt-6 text-center text-white/55 text-sm md:text-base"
         >
-          Coach {CONTACT_FIRST} checks it against Venmo by hand, then your numbers post on{' '}
+          We check it against Venmo by hand, then your numbers post on{' '}
           <a href="#board" className="text-gold-500 underline underline-offset-4 hover:text-gold-400">
             the ticket board
           </a>
@@ -280,8 +279,8 @@ function EntriesClosedNotice({ drawn }: { drawn: boolean }) {
             <span className="text-stadium text-lg md:text-xl text-gold-500 tracking-wide">
               Nothing sent now can buy a ticket.
             </span>{' '}
-            Anything sent after the deadline gets no ticket number and Coach {CONTACT_FIRST} has to
-            send it back by hand.
+            Anything sent after the deadline gets no ticket number and has to be sent back by
+            hand.
           </p>
         </motion.div>
 
@@ -530,7 +529,7 @@ export default function RafflePage() {
         </section>
 
         {/* ---------- 9. QUESTIONS ---------- */}
-        <section className="relative bg-navy-900 pb-16 md:pb-20 px-4">
+        <section id="contact" className="relative bg-navy-900 pb-16 md:pb-20 px-4 scroll-mt-20">
           <motion.div
             {...fadeUp}
             transition={{ duration: 0.8, ease }}
