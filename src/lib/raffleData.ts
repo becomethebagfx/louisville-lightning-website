@@ -70,7 +70,7 @@ export const VENMO = {
   displayName: 'Louisville Lightning Yellow',
   /** Venmo's own QR target, straight off Taylor's profile. */
   codeUrl: 'https://venmo.com/code?user_id=4667355036648975849&created=1788128250.323995&printed=1',
-  qrImage: '/assets/raffle/venmo-qr.png',
+  qrImage: '/assets/raffle/venmo-qr-1788128250.png',
   /**
    * NOT RENDERED ANYWHERE, deliberately. Brandon took the owner's name off the
    * public page 2026-08-27: the Venmo card is white and yellow and says
