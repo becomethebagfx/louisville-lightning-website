@@ -33,6 +33,7 @@ The script refuses to write a flyer it cannot verify:
 
 from __future__ import annotations
 
+import math
 import re
 import sys
 from dataclasses import dataclass
@@ -70,19 +71,32 @@ MARGIN = 64  # only full-bleed bands and rules may cross this
 # ------------------------------------------------------------------
 LOGO_TOP, LOGO_H = 24, 168
 EYEBROW_TOP, EYEBROW_H = 204, 32
-PANEL_X, PANEL_Y, PANEL_W = 243, 250, 594
-BAND_TOP, BAND_H = 905, 188
-PANEL_COVER = 100          # strip of the photo panel that the band hides
+
+# Two photos, side by side, edge to edge between the margins. Brandon asked
+# for "multiple pictures that we have" and there are exactly two: the palm and
+# the web. A single hero used to ride UNDER the price band, which hid the
+# wrist and the hang tag; two panels sitting clear of the band is both simpler
+# to reason about and simpler to look at, so the band no longer overlaps
+# anything and PANEL_COVER is gone.
+# The panels are 500 tall, not 620. Taller panels are width-constrained by the
+# PALM photo, whose glove is nearly square, and that left the WEB glove, which
+# is wide and short, floating in the middle of its frame at under half the
+# panel height while its neighbour filled the frame edge to edge. Two photos
+# side by side have to read as a pair.
+PANEL_Y, PANEL_W, PANEL_H, PANEL_GAP = 258, 468, 500, 16
+PANEL_X_LEFT = MARGIN                              # 64
+PANEL_X_RIGHT = MARGIN + PANEL_W + PANEL_GAP       # 548, ends flush at 1016
+BAND_TOP, BAND_H = 782, 188
 GLOVE_PAD = 24             # minimum clear canvas px around the glove
-PRIZE_TOP, PRIZE_H = 1101, 42
-SPEC_TOP, SPEC_H = 1147, 24   # size + model, read off the thumb stamp
-DRAW_TOP, DRAW_H = 1176, 54
-DEADLINE_TOP, DEADLINE_H = 1234, 22   # entries close date, under the drawing
-HAIRLINE_TOP = 1262
-SCAN_TOP, SCAN_H = 1269, 40
-QR_TOP = 1316
-URL_TOP, URL_H = 1806, 40
-CONTACT_TOP, CONTACT_H = 1858, 32
+PRIZE_TOP, PRIZE_H = 991, 42
+SPEC_TOP, SPEC_H = 1037, 24   # size + model, read off the thumb stamp
+DRAW_TOP, DRAW_H = 1066, 54
+DEADLINE_TOP, DEADLINE_H = 1124, 22   # entries close date, under the drawing
+HAIRLINE_TOP = 1152
+SCAN_TOP, SCAN_H = 1159, 40
+QR_TOP = 1246
+URL_TOP, URL_H = 1772, 40
+CONTACT_TOP, CONTACT_H = 1824, 32
 
 # QR sizing, chosen by measurement not by eye. The source code is 33
 # modules. Rendering at a whole number of pixels per module keeps every
@@ -92,13 +106,25 @@ CONTACT_TOP, CONTACT_H = 1858, 32
 # wide decoded on every resampling filter tried, where the earlier 330px
 # code lost 540 and 480 outright. The gate at the bottom of this file
 # re-runs that sweep on every build.
-QR_MODULES, QR_PX_PER_MODULE, QR_QUIET, QR_RING = 33, 11, 52, 5
+QR_MODULES, QR_PX_PER_MODULE, QR_QUIET, QR_RING = 33, 12, 52, 5
 
-# The glove leather in glove-palm.jpg, read off a coordinate grid laid
-# over the source at 100px intervals. Fingertips y=380, heel y=1700,
-# pinky side x=55, thumb side x=1240. The Ready-2-Go hang tag hangs off
-# the left at roughly x 25..145, and is deliberately kept in frame.
-GLOVE_BOX = (55, 380, 1240, 1700)
+# Where the leather actually sits in each source photo, read off a coordinate
+# grid laid over the 1600x2133 originals. The crop is solved from these, so a
+# new photo needs its box measured, never guessed.
+#
+#   palm: fingertips y=380, heel y=1700, pinky x=55, thumb x=1240. The
+#         Ready-2-Go hang tag hangs off the left at x 25..145 and is kept.
+#   web:  the glove runs off the LEFT edge of its frame, so x0 is 0 by
+#         necessity; top lace loop y=590, tag bottom y=1670, right edge
+#         x=1265. GLOVE_PAD on the left is therefore unreachable and the
+#         gate is told so explicitly rather than being loosened for both.
+GLOVE_BOXES = {
+    "glove-palm.jpg": (55, 380, 1240, 1700),
+    "glove-web.jpg": (0, 590, 1265, 1670),
+}
+# Sides the gate must not demand clearance on, because the subject is cut off
+# in the source itself. Naming them here keeps the check strict everywhere else.
+GLOVE_BLEED = {"glove-web.jpg": {"left"}}
 
 
 # ==================================================================
@@ -114,7 +140,7 @@ class RaffleFacts:
     url_full: str
     url_display: str
     qr_path: Path
-    photo_path: Path
+    photo_paths: tuple[Path, ...]
     contact_role: str
     contact_name: str
     contact_phone: str
@@ -156,7 +182,9 @@ def read_facts() -> RaffleFacts:
                       "PRICE_PER_TICKET_CENTS"))
     url_full = _grab(r"export const RAFFLE_URL\s*=\s*'([^']+)'", src, "RAFFLE_URL")
     qr_rel = _grab(r"export const RAFFLE_QR_IMAGE\s*=\s*'([^']+)'", src, "RAFFLE_QR_IMAGE")
-    photo_rel = _grab(r"src:\s*'([^']+)'", prize, "PRIZE.photos[0].src")
+    photo_rels = re.findall(r"src:\s*'([^']+)'", prize)
+    if len(photo_rels) < 2:
+        sys.exit(f"FATAL: PRIZE.photos has {len(photo_rels)} entries, the flyer needs 2")
 
     return RaffleFacts(
         prize_name=_grab(r"name:\s*'([^']+)'", prize, "PRIZE.name"),
@@ -174,7 +202,7 @@ def read_facts() -> RaffleFacts:
         url_full=url_full,
         url_display=re.sub(r"^https?://", "", url_full).rstrip("/"),
         qr_path=PUBLIC / qr_rel.lstrip("/"),
-        photo_path=PUBLIC / photo_rel.lstrip("/"),
+        photo_paths=tuple(PUBLIC / r.lstrip("/") for r in photo_rels[:2]),
         contact_role=_grab(r"role:\s*'([^']+)'", contact, "RAFFLE_CONTACT.role"),
         contact_name=_grab(r"name:\s*'([^']+)'", contact, "RAFFLE_CONTACT.name"),
         contact_phone=_grab(r"phone:\s*'([^']+)'", contact, "RAFFLE_CONTACT.phone"),
@@ -362,41 +390,78 @@ def vignette(img: Image.Image, strength: float = 0.62) -> Image.Image:
     return Image.composite(img.convert("RGB"), shade, mask).convert("RGBA")
 
 
-def hero_crop(photo: Image.Image, panel_w: int, panel_h: int,
-              visible_h: int) -> tuple[Image.Image, tuple[float, float, float, float]]:
+def panel_crop(path: Path, panel_w: int, panel_h: int
+               ) -> tuple[Image.Image, tuple[float, float, float, float]]:
     """Pick the source rectangle rather than squashing the photo.
 
-    The rectangle is solved from GLOVE_BOX so that the whole glove lands
-    inside the VISIBLE part of the panel with at least GLOVE_PAD of clear
-    canvas on every side. Whatever falls below the glove (the wrist and
-    the Rawlings hang tag) drops into the strip the price band covers.
+    Solved from that photo's measured GLOVE_BOXES entry so the whole glove
+    lands inside the panel with at least GLOVE_PAD of clear canvas on every
+    side it is not already cut off on.
 
-    Returns the resized crop and the glove's rectangle in panel space so
-    the caller can assert the framing instead of trusting it.
+    Returns the resized crop and the glove's rectangle in panel space, so the
+    caller can assert the framing instead of trusting it.
     """
-    gx0, gy0, gx1, gy1 = GLOVE_BOX
+    photo = Image.open(path).convert("RGB")
+    gx0, gy0, gx1, gy1 = GLOVE_BOXES[path.name]
     gw, gh = gx1 - gx0, gy1 - gy0
-    scale = min((panel_w - 2 * GLOVE_PAD) / gw, (visible_h - 2 * GLOVE_PAD) / gh)
+    scale = min((panel_w - 2 * GLOVE_PAD) / gw, (panel_h - 2 * GLOVE_PAD) / gh)
 
     win_w, win_h = panel_w / scale, panel_h / scale
-    vis_win_h = visible_h / scale
+    left = (gx0 + gx1) / 2 - win_w / 2
+    top = (gy0 + gy1) / 2 - win_h / 2
 
-    left = min(max((gx0 + gx1) / 2 - win_w / 2, 0), photo.width - win_w)
-    top = min(max(gy0 - (vis_win_h - gh) / 2, 0), photo.height - win_h)
+    # On a side where the SUBJECT already runs off the source frame, clamp the
+    # window to the photo instead of inventing pixels. Replicating 72px of the
+    # web photo's left edge stretched the kitchen blinds into a striped smear
+    # that read as a rendering fault; letting the glove run to the panel edge
+    # on that side reads as a deliberate crop, which is what it is.
+    bleeds = GLOVE_BLEED.get(path.name, set())
+    if "left" in bleeds:
+        left = max(left, 0.0)
+    if "right" in bleeds:
+        left = min(left, photo.width - win_w)
+    if "top" in bleeds:
+        top = max(top, 0.0)
+    if "bottom" in bleeds:
+        top = min(top, photo.height - win_h)
 
-    crop = photo.crop((round(left), round(top), round(left + win_w), round(top + win_h)))
-    crop = crop.resize((panel_w, panel_h), Image.LANCZOS)
-    glove_on_panel = ((gx0 - left) * scale, (gy0 - top) * scale,
-                      (gx1 - left) * scale, (gy1 - top) * scale)
-    return crop, glove_on_panel
+    # The window is deliberately NOT clamped to the source. Both gloves sit
+    # left of centre in their frames, so a clamped window shoves the glove
+    # against the panel edge: the palm landed 19px from it, under the 24px
+    # floor, and the gate refused to ship. Loosening GLOVE_PAD would have
+    # hidden that rather than fixed it.
+    #
+    # What fills the overhang matters. Flat navy left a visible dark strip
+    # between the gold frame and the photo that read as a printing error, so
+    # the overhang replicates the outermost row and column of real pixels
+    # instead. At the few px involved it is indistinguishable from the photo
+    # continuing.
+    import numpy as np
+
+    l0, t0 = int(math.floor(left)), int(math.floor(top))
+    l1, t1 = l0 + round(win_w), t0 + round(win_h)
+    vx0, vy0 = max(l0, 0), max(t0, 0)
+    vx1, vy1 = min(l1, photo.width), min(t1, photo.height)
+    if vx0 >= vx1 or vy0 >= vy1:
+        sys.exit(f"FATAL: {path.name} crop window falls entirely off the photo")
+
+    arr = np.asarray(photo.crop((vx0, vy0, vx1, vy1)))
+    arr = np.pad(arr, ((vy0 - t0, t1 - vy1), (vx0 - l0, l1 - vx1), (0, 0)), mode="edge")
+    win = Image.fromarray(arr)
+    left, top = float(l0), float(t0)
+
+    crop = win.resize((panel_w, panel_h), Image.LANCZOS)
+    on_panel = ((gx0 - left) * scale, (gy0 - top) * scale,
+                (gx1 - left) * scale, (gy1 - top) * scale)
+    return crop, on_panel
 
 
 # ==================================================================
 # 5. the flyer
 # ==================================================================
-def build() -> tuple[RaffleFacts, list[str], tuple[float, float, float, float]]:
+def build() -> tuple[RaffleFacts, list[str], dict[str, tuple[float, float, float, float]]]:
     facts = read_facts()
-    for p in (facts.qr_path, facts.photo_path, LOGO):
+    for p in (facts.qr_path, *facts.photo_paths, LOGO):
         if not p.exists():
             sys.exit(f"FATAL: missing asset {p}")
 
@@ -417,7 +482,7 @@ def build() -> tuple[RaffleFacts, list[str], tuple[float, float, float, float]]:
           center_x=W // 2, top=LOGO_TOP)
 
     # ---------- eyebrow, with rules running out to the margins ----------
-    eyebrow = fit_line(s("TEAM FUNDRAISER RAFFLE"), DISPLAY, GOLD_500,
+    eyebrow = fit_line(s("GLOVE RAFFLE"), DISPLAY, GOLD_500,
                        max_w=540, max_h=EYEBROW_H, tracking_ratio=0.16, start=60)
     eb = place(canvas, eyebrow, "eyebrow", center_x=W // 2, top=EYEBROW_TOP)
     ed = ImageDraw.Draw(canvas)
@@ -425,21 +490,22 @@ def build() -> tuple[RaffleFacts, list[str], tuple[float, float, float, float]]:
     for x0, x1 in ((MARGIN + 44, eb[0] - 30), (eb[2] + 30, W - MARGIN - 44)):
         ed.rectangle([x0, rule_y - 1, x1, rule_y + 1], fill=GOLD_500 + (130,))
 
-    # ---------- hero photo ----------
-    visible_h = BAND_TOP - PANEL_Y
-    panel_h = visible_h + PANEL_COVER
-    photo = Image.open(facts.photo_path).convert("RGB")
-    hero, glove_on_panel = hero_crop(photo, PANEL_W, panel_h, visible_h)
-    gold_glow(canvas, (PANEL_X, PANEL_Y, PANEL_X + PANEL_W, BAND_TOP))
-    place(canvas, vignette(grade(hero)), "hero-photo", left=PANEL_X, top=PANEL_Y)
-    ImageDraw.Draw(canvas).rectangle(
-        [PANEL_X - 5, PANEL_Y - 5, PANEL_X + PANEL_W + 4, PANEL_Y + panel_h + 4],
-        outline=GOLD_500 + (255,), width=5)
+    # ---------- the two photos ----------
+    gloves: dict[str, tuple[float, float, float, float]] = {}
+    for path, x, label in ((facts.photo_paths[0], PANEL_X_LEFT, "photo-left"),
+                           (facts.photo_paths[1], PANEL_X_RIGHT, "photo-right")):
+        crop, on_panel = panel_crop(path, PANEL_W, PANEL_H)
+        gloves[path.name] = on_panel
+        gold_glow(canvas, (x, PANEL_Y, x + PANEL_W, PANEL_Y + PANEL_H))
+        place(canvas, vignette(grade(crop)), label, left=x, top=PANEL_Y)
+        ImageDraw.Draw(canvas).rectangle(
+            [x - 5, PANEL_Y - 5, x + PANEL_W + 4, PANEL_Y + PANEL_H + 4],
+            outline=GOLD_500 + (255,), width=5)
 
     # ---------- price band ----------
-    # Full bleed, opaque gold, riding over the bottom of the photo. Navy on
-    # solid gold means the loudest line on the flyer never has to fight the
-    # photo for legibility.
+    # Full bleed, opaque gold, sitting clear below the photos. Navy on solid
+    # gold means the loudest line on the flyer never has to fight anything for
+    # legibility.
     bd = ImageDraw.Draw(canvas)
     bd.rectangle([0, BAND_TOP, W, BAND_TOP + BAND_H], fill=GOLD_500 + (255,))
     bd.rectangle([0, BAND_TOP, W, BAND_TOP + 5], fill=GOLD_300 + (255,))
@@ -518,14 +584,14 @@ def build() -> tuple[RaffleFacts, list[str], tuple[float, float, float, float]]:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(OUT, "PNG", optimize=True)
-    return facts, strings, glove_on_panel
+    return facts, strings, gloves
 
 
 # ==================================================================
 # 6. verification. None of this is optional.
 # ==================================================================
 def verify(facts: RaffleFacts, strings: list[str],
-           glove_on_panel: tuple[float, float, float, float]) -> None:
+           gloves: dict[str, tuple[float, float, float, float]]) -> None:
     failures: list[str] = []
 
     for text in strings:
@@ -539,20 +605,34 @@ def verify(facts: RaffleFacts, strings: list[str],
         if t < 20 or b > H - 20:
             failures.append(f"{label} breaks the top or bottom margin: y {t}..{b}")
 
-    blocks = [p for p in PLACED if p[0] != "hero-photo"]
+    blocks = [p for p in PLACED if not p[0].startswith("photo-")]
     for i, a in enumerate(blocks):
         for b in blocks[i + 1:]:
             if a[1] < b[3] and b[1] < a[3] and a[2] < b[4] and b[2] < a[4]:
                 failures.append(f"{a[0]} overlaps {b[0]}")
 
-    # the glove must be whole, and inside the part of the panel you can see
-    visible_h = BAND_TOP - PANEL_Y
-    gl, gt, gr, gb = glove_on_panel
-    pads = {"left": gl, "top": gt, "right": PANEL_W - gr, "bottom": visible_h - gb}
-    for side, pad in pads.items():
-        if pad < GLOVE_PAD - 1:
-            failures.append(f"glove is only {pad:.0f}px from the {side} of the "
-                            f"visible panel, wanted at least {GLOVE_PAD}px")
+    # Each glove must be whole and clear of its panel edges, except on a side
+    # the source photo itself already cuts off.
+    if set(gloves) != {p.name for p in facts.photo_paths}:
+        failures.append(f"framed {sorted(gloves)}, expected "
+                        f"{sorted(p.name for p in facts.photo_paths)}")
+    all_pads: dict[str, dict[str, float]] = {}
+    for name, (gl, gt, gr, gb) in gloves.items():
+        bleeds = GLOVE_BLEED.get(name, set())
+        pads = {"left": gl, "top": gt, "right": PANEL_W - gr, "bottom": PANEL_H - gb}
+        all_pads[name] = pads
+        for side, pad in pads.items():
+            if side in bleeds:
+                continue
+            if pad < GLOVE_PAD - 1:
+                failures.append(f"{name}: glove is only {pad:.0f}px from the {side} "
+                                f"of its panel, wanted at least {GLOVE_PAD}px")
+
+    # The two panels must not collide and must sit clear above the price band.
+    if PANEL_X_RIGHT < PANEL_X_LEFT + PANEL_W:
+        failures.append("the two photo panels overlap")
+    if PANEL_Y + PANEL_H + 5 > BAND_TOP:
+        failures.append("the photo panels run into the price band")
 
     import cv2  # late, so a missing cv2 cannot hide behind an earlier error
     import numpy as np
@@ -607,8 +687,13 @@ def verify(facts: RaffleFacts, strings: list[str],
     print("PLACEMENT")
     for label, l, t, r, b in PLACED:
         print(f"  {label:12} x {l:4}..{r:4}   y {t:4}..{b:4}   {r - l:4} x {b - t:4}")
-    print(f"  glove clear of the visible panel edges by: "
-          + ", ".join(f"{k} {v:.0f}px" for k, v in pads.items()))
+    print("  each glove's clearance from its own panel edges:")
+    for name, pads_ in all_pads.items():
+        bleeds = GLOVE_BLEED.get(name, set())
+        shown = ", ".join(
+            f"{k} {v:.0f}px" + (" (cut off in source)" if k in bleeds else "")
+            for k, v in pads_.items())
+        print(f"    {name:16} {shown}")
     print("-" * 64)
     print(f"QR DECODED BACK OUT OF THE FINISHED PNG: {decoded!r}")
     print(f"  and still decodes after downscaling: {len(survived)}/12 "
