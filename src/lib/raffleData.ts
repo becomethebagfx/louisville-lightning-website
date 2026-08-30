@@ -69,7 +69,7 @@ export const SEED_SOURCE_LABEL = 'Kentucky Pick 3 MIDDAY drawing, October 1, 202
 export const VENMO = {
   displayName: 'Louisville Lightning Yellow',
   /** Venmo's own QR target, straight off Taylor's profile. */
-  codeUrl: 'https://venmo.com/code?user_id=4667355036648975849&created=1787160475.927356&printed=1',
+  codeUrl: 'https://venmo.com/code?user_id=4667355036648975849&created=1788128250.323995&printed=1',
   qrImage: '/assets/raffle/venmo-qr.png',
   /**
    * NOT RENDERED ANYWHERE, deliberately. Brandon took the owner's name off the
