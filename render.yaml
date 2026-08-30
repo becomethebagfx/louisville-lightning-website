@@ -12,6 +12,13 @@ services:
         name: Cache-Control
         value: no-cache
     routes:
+      # loulightning.com/flyer -> the raffle flyer PNG.
+      # A redirect, not a rewrite, so the browser lands on the real .png URL
+      # and a phone's long-press offers "Save Image" with a sane filename.
+      # Must sit ABOVE the catch-all: routes match in order.
+      - type: redirect
+        source: /flyer
+        destination: /assets/raffle/flyer.png
       - type: rewrite
         source: /*
         destination: /index.html
