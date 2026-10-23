@@ -113,3 +113,4 @@ Taylor Davis = Lightning Yellow). Text Brandon when done. Full plan:
   louisville-lightning; commit b159914
 - Commands: npm run build; npx vite preview --port 4517; Twilio SMS snippet
   in CLAUDE.md
+- 2026-10-22 RULE 19: same-major lockfile updates (react 19.3.0, react-router 7.18.4, vite 7.3.7 and transitive build deps) clear all 24 npm advisories; branch sec/rule19-2026-10-22.
